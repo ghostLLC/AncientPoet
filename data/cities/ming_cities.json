@@ -1,0 +1,18 @@
+{
+  "dynasty": "ming",
+  "name": "明朝",
+  "startYear": 1368,
+  "endYear": 1644,
+  "mapImageSize": { "width": 2000, "height": 1500 },
+  "description": "明朝（1368年—1644年），是中国历史上最后一个由汉族建立的封建王朝。",
+  "cities": [
+    { "name": "南京", "modernName": "南京", "province": "南直隶", "lat": 32.06, "lng": 118.80, "mapX": 1380, "mapY": 755, "isCapital": true },
+    { "name": "北京", "modernName": "北京", "province": "北直隶", "lat": 39.90, "lng": 116.40, "mapX": 1280, "mapY": 460, "isCapital": true },
+    { "name": "苏州", "modernName": "苏州", "province": "南直隶", "lat": 31.30, "lng": 120.62, "mapX": 1440, "mapY": 780, "isCapital": false },
+    { "name": "杭州", "modernName": "杭州", "province": "浙江", "lat": 30.25, "lng": 120.17, "mapX": 1420, "mapY": 820, "isCapital": false },
+    { "name": "扬州", "modernName": "扬州", "province": "南直隶", "lat": 32.39, "lng": 119.42, "mapX": 1400, "mapY": 740, "isCapital": false },
+    { "name": "南昌", "modernName": "南昌", "province": "江西", "lat": 28.68, "lng": 115.86, "mapX": 1310, "mapY": 880, "isCapital": false },
+    { "name": "成都", "modernName": "成都", "province": "四川", "lat": 30.57, "lng": 104.07, "mapX": 920, "mapY": 820, "isCapital": false },
+    { "name": "西安", "modernName": "西安", "province": "陕西", "lat": 34.26, "lng": 108.94, "mapX": 1050, "mapY": 680, "isCapital": false }
+  ]
+}

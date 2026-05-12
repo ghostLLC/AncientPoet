@@ -13,7 +13,10 @@ import com.ancientpoet.server.route.authRoute
 import com.ancientpoet.server.route.conversationRoute
 import com.ancientpoet.server.route.mapRoute
 import com.ancientpoet.server.route.messageRoute
+import com.ancientpoet.server.route.movementRoute
+import com.ancientpoet.server.route.poemRoute
 import com.ancientpoet.server.route.poetRoute
+import com.ancientpoet.server.route.storylineRoute
 import com.ancientpoet.server.route.uploadRoute
 import com.ancientpoet.server.route.userRoute
 import com.ancientpoet.server.scheduler.MessageDeliveryScheduler
@@ -55,7 +58,10 @@ fun Application.module() {
             poetRoute()
             conversationRoute()
             messageRoute()
+            storylineRoute()
+            movementRoute()
             mapRoute()
+            poemRoute()
             uploadRoute()
         }
     }

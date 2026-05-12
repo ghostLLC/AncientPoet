@@ -28,6 +28,8 @@ class MessageService(
     private val contextManager: ContextManager,
     private val deliveryScheduler: MessageDeliveryScheduler,
     private val poetLocationService: PoetLocationService,
+    private val storylineService: StorylineService? = null,
+    private val movementService: MovementService? = null,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO)
 

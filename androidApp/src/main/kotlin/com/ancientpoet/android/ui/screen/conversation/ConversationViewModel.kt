@@ -17,34 +17,66 @@ class ConversationViewModel(private val client: HttpClient) {
     private val _state = MutableStateFlow(ConversationState())
     val state: StateFlow<ConversationState> = _state
 
+    fun loadConversation(conversationId: Long) {
+        scope.launch {
+            try {
+                val sl: StorylineRes? = try {
+                    client.get("http://10.0.2.2:8080/api/v1/conversations/$conversationId/storyline/state").body()
+                } catch (_: Exception) { null }
+                _state.value = _state.value.copy(storyline = sl?.let { StorylineInfo(it.currentYear, it.poetAge, it.locationName, it.activeEvent, it.eventDescription, it.eventType) })
+            } catch (_: Exception) {}
+        }
+    }
+
     fun loadMessages(conversationId: Long) {
         scope.launch {
             try {
                 val msgs: List<MsgResponse> = client.get("http://10.0.2.2:8080/api/v1/conversations/$conversationId/messages").body()
-                _state.value = _state.value.copy(messages = msgs.map { MsgItem(it.id, it.senderType, it.contentText ?: "", it.translation) })
-            } catch (e: Exception) { /* silent */ }
+                _state.value = _state.value.copy(messages = msgs.map { MsgItem(it.id, it.senderType, it.contentText ?: "", it.translation, it.contentImageUrl) })
+            } catch (_: Exception) {}
         }
     }
 
-    fun sendMessage(conversationId: Long, text: String) {
+    fun sendMessage(conversationId: Long, text: String, imageUrl: String? = null) {
         scope.launch {
             _state.value = _state.value.copy(isSending = true)
             try {
                 client.post("http://10.0.2.2:8080/api/v1/conversations/$conversationId/messages") {
                     contentType(ContentType.Application.Json)
-                    setBody(SendReq(text))
+                    setBody(SendReq(text.ifBlank { null }, imageUrl))
                 }
                 _state.value = _state.value.copy(isSending = false)
                 loadMessages(conversationId)
-            } catch (e: Exception) {
+                loadConversation(conversationId)
+            } catch (_: Exception) {
                 _state.value = _state.value.copy(isSending = false)
             }
         }
     }
+
+    fun jumpToYear(conversationId: Long, year: Int) {
+        scope.launch {
+            try {
+                client.post("http://10.0.2.2:8080/api/v1/conversations/$conversationId/storyline/jump") {
+                    contentType(ContentType.Application.Json)
+                    setBody(JumpReq(year))
+                }
+                loadConversation(conversationId)
+            } catch (_: Exception) {}
+        }
+    }
 }
 
-data class ConversationState(val messages: List<MsgItem> = emptyList(), val isSending: Boolean = false, val poetName: String = "")
-data class MsgItem(val id: Long, val senderType: String, val contentText: String, val translation: String?)
+data class ConversationState(
+    val messages: List<MsgItem> = emptyList(),
+    val isSending: Boolean = false,
+    val poetName: String = "",
+    val storyline: StorylineInfo? = null,
+)
+data class MsgItem(val id: Long, val senderType: String, val contentText: String, val translation: String?, val imageUrl: String? = null)
+data class StorylineInfo(val currentYear: Int, val poetAge: Int, val locationName: String, val activeEvent: String?, val eventDescription: String?, val eventType: String)
 
-@Serializable data class MsgResponse(val id: Long, val senderType: String, val contentText: String?, val translation: String?)
-@Serializable data class SendReq(val contentText: String)
+@Serializable data class MsgResponse(val id: Long, val senderType: String, val contentText: String?, val translation: String?, val contentImageUrl: String? = null)
+@Serializable data class SendReq(val contentText: String?, val contentImageUrl: String? = null)
+@Serializable data class JumpReq(val year: Int)
+@Serializable data class StorylineRes(val currentYear: Int, val poetAge: Int, val locationName: String, val activeEvent: String?, val eventDescription: String?, val eventType: String)

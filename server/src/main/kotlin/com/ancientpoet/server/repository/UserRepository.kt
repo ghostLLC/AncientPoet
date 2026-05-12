@@ -97,6 +97,23 @@ class UserRepository {
         }
     }
 
+    suspend fun setMoving(userId: Long, dynastyId: String, toName: String, toLat: Double, toLng: Double, startTime: java.time.Instant, arrivalTime: java.time.Instant) {
+        withContext(Dispatchers.IO) {
+            transaction {
+                UserLocationsTable.update({
+                    (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId)
+                }) {
+                    it[status] = "moving"
+                    it[movingToName] = toName
+                    it[movingToLat] = toLat
+                    it[movingToLng] = toLng
+                    it[movingStartTime] = startTime
+                    it[movingArrivalTime] = arrivalTime
+                }
+            }
+        }
+    }
+
     private fun org.jetbrains.exposed.sql.ResultRow.toUser() = User(
         id = this[UsersTable.id].value,
         phone = this[UsersTable.phone],

@@ -1,0 +1,20 @@
+{
+  "dynasty": "han",
+  "name": "汉朝",
+  "startYear": -202,
+  "endYear": 220,
+  "mapImageSize": { "width": 2000, "height": 1500 },
+  "description": "汉朝（前202年—220年），分为西汉和东汉，是中国历史上最强盛的朝代之一。",
+  "cities": [
+    { "name": "长安", "modernName": "西安", "province": "司隶", "lat": 34.26, "lng": 108.94, "mapX": 1050, "mapY": 680, "isCapital": true },
+    { "name": "洛阳", "modernName": "洛阳", "province": "司隶", "lat": 34.62, "lng": 112.45, "mapX": 1180, "mapY": 665, "isCapital": true },
+    { "name": "邺城", "modernName": "临漳", "province": "冀州", "lat": 36.33, "lng": 114.60, "mapX": 1220, "mapY": 600, "isCapital": false },
+    { "name": "成都", "modernName": "成都", "province": "益州", "lat": 30.57, "lng": 104.07, "mapX": 920, "mapY": 820, "isCapital": false },
+    { "name": "谯县", "modernName": "亳州", "province": "豫州", "lat": 33.87, "lng": 115.78, "mapX": 1280, "mapY": 700, "isCapital": false },
+    { "name": "临淄", "modernName": "淄博", "province": "青州", "lat": 36.70, "lng": 118.38, "mapX": 1340, "mapY": 560, "isCapital": false },
+    { "name": "陈留", "modernName": "开封", "province": "兖州", "lat": 34.80, "lng": 114.30, "mapX": 1250, "mapY": 630, "isCapital": false },
+    { "name": "鄄城", "modernName": "鄄城", "province": "兖州", "lat": 35.58, "lng": 115.50, "mapX": 1280, "mapY": 590, "isCapital": false },
+    { "name": "江陵", "modernName": "荆州", "province": "荆州", "lat": 30.35, "lng": 112.19, "mapX": 1170, "mapY": 830, "isCapital": false },
+    { "name": "襄阳", "modernName": "襄阳", "province": "荆州", "lat": 32.04, "lng": 112.14, "mapX": 1160, "mapY": 760, "isCapital": false }
+  ]
+}

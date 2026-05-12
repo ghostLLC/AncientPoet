@@ -6,16 +6,14 @@ import com.ancientpoet.server.model.db.PoetsTable
 import com.ancientpoet.server.model.domain.Conversation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class ConversationRepository {
     suspend fun create(
         userId: Long, poetId: Long, mode: String, dynastyId: String,
-        backgroundSetting: String?,
+        backgroundSetting: String?, storylineStartYear: Int? = null,
     ): Conversation = withContext(Dispatchers.IO) {
         transaction {
             val id = ConversationsTable.insertAndGetId {
@@ -24,8 +22,22 @@ class ConversationRepository {
                 it[ConversationsTable.mode] = mode
                 it[ConversationsTable.dynastyId] = dynastyId
                 it[ConversationsTable.backgroundSetting] = backgroundSetting
+                if (storylineStartYear != null) {
+                    it[ConversationsTable.storylineCurrentYear] = storylineStartYear
+                }
             }
             findByIdInternal(id.value)!!
+        }
+    }
+
+    suspend fun updateStorylineYear(conversationId: Long, year: Int) {
+        withContext(Dispatchers.IO) {
+            transaction {
+                ConversationsTable.update({ ConversationsTable.id eq conversationId }) {
+                    it[ConversationsTable.storylineCurrentYear] = year
+                    it[ConversationsTable.updatedAt] = java.time.Instant.now()
+                }
+            }
         }
     }
 

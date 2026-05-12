@@ -39,7 +39,9 @@ object ServerModule {
         single { AuthService(get(), get()) }
         single { PoetLocationService(get()) }
         single { UserService(get()) }
+        single { StorylineService(get(), get(), get()) }
+        single { MovementService(get()) }
         single { ConversationService(get(), get(), get()) }
-        single { MessageService(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+        single { MessageService(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     }
 }

@@ -1,0 +1,18 @@
+{
+  "dynasty": "jin",
+  "name": "晋朝",
+  "startYear": 265,
+  "endYear": 420,
+  "mapImageSize": { "width": 2000, "height": 1500 },
+  "description": "晋朝（265年—420年），分西晋和东晋，上承三国下启南北朝。",
+  "cities": [
+    { "name": "洛阳", "modernName": "洛阳", "province": "司州", "lat": 34.62, "lng": 112.45, "mapX": 1180, "mapY": 665, "isCapital": true },
+    { "name": "建康", "modernName": "南京", "province": "扬州", "lat": 32.06, "lng": 118.80, "mapX": 1380, "mapY": 755, "isCapital": true },
+    { "name": "浔阳", "modernName": "九江", "province": "江州", "lat": 29.71, "lng": 115.97, "mapX": 1330, "mapY": 850, "isCapital": false },
+    { "name": "会稽", "modernName": "绍兴", "province": "扬州", "lat": 30.05, "lng": 120.58, "mapX": 1430, "mapY": 830, "isCapital": false },
+    { "name": "成都", "modernName": "成都", "province": "益州", "lat": 30.57, "lng": 104.07, "mapX": 920, "mapY": 820, "isCapital": false },
+    { "name": "江陵", "modernName": "荆州", "province": "荆州", "lat": 30.35, "lng": 112.19, "mapX": 1170, "mapY": 830, "isCapital": false },
+    { "name": "襄阳", "modernName": "襄阳", "province": "荆州", "lat": 32.04, "lng": 112.14, "mapX": 1160, "mapY": 760, "isCapital": false },
+    { "name": "长安", "modernName": "西安", "province": "雍州", "lat": 34.26, "lng": 108.94, "mapX": 1050, "mapY": 680, "isCapital": false }
+  ]
+}

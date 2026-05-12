@@ -5,6 +5,7 @@ import com.ancientpoet.android.ui.screen.conversation.ConversationViewModel
 import com.ancientpoet.android.ui.screen.home.HomeViewModel
 import com.ancientpoet.android.ui.screen.map.MapViewModel
 import com.ancientpoet.android.ui.screen.poet.PoetViewModel
+import com.ancientpoet.android.ui.screen.poetry.PoetryViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.Logging
@@ -29,5 +30,6 @@ object AppModule {
         viewModel { PoetViewModel(get()) }
         viewModel { ConversationViewModel(get()) }
         viewModel { MapViewModel(get()) }
+        viewModel { PoetryViewModel(get()) }
     }
 }

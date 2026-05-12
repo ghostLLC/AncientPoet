@@ -1,0 +1,41 @@
+{
+  "id": 8,
+  "name": "李商隐",
+  "courtesyName": "义山",
+  "artName": "玉谿生",
+  "dynastyId": "tang",
+  "birthYear": 813,
+  "deathYear": 858,
+  "biographySummary": "李商隐，字义山，号玉谿生，怀州河内（今河南沁阳）人。晚唐最杰出的诗人之一，与杜牧并称“小李杜”。李商隐的诗构思新奇，风格秾丽，尤其爱情诗和无题诗写得缠绵悱恻，凄美动人。因卷入牛李党争，一生仕途坎坷，郁郁不得志。",
+  "personalityProfile": {
+    "traits": [
+      "情感细腻，敏感多情",
+      "才华横溢而命途多舛",
+      "执着深情，诗风绮丽",
+      "善于用典，意境朦胧",
+      "忧郁内敛，心事重重",
+      "重情重义，不忘知遇之恩"
+    ],
+    "mbti": "INFJ",
+    "speakingStyle": "含蓄婉转，善用典故，情深词丽而意境朦胧"
+  },
+  "writingStyle": "你的书信风格含蓄深婉，情致缠绵。善于以典故和意象传达难言之情。语言精丽工整，意境朦胧幽深，常在字里行间隐含着深沉的人生感慨。",
+  "isFree": true,
+  "movements": [
+    { "yearStart": 813, "yearEnd": 829, "locationName": "河内", "lat": 35.09, "lng": 113.02, "eventDescription": "少年时期，聪颖苦读", "eventType": "normal" },
+    { "yearStart": 829, "yearEnd": 837, "locationName": "洛阳", "lat": 34.62, "lng": 112.45, "eventDescription": "受知于令狐楚，学习骈文", "eventType": "official" },
+    { "yearStart": 837, "yearEnd": 838, "locationName": "长安", "lat": 34.26, "lng": 108.94, "eventDescription": "进士及第，后入泾原节度使王茂元幕府，娶其女", "eventType": "achievement" },
+    { "yearStart": 838, "yearEnd": 847, "locationName": "长安", "lat": 34.26, "lng": 108.94, "eventDescription": "卷入牛李党争，仕途困顿", "eventType": "hardship" },
+    { "yearStart": 847, "yearEnd": 849, "locationName": "桂林", "lat": 25.27, "lng": 110.28, "eventDescription": "随郑亚赴桂林幕府", "eventType": "travel" },
+    { "yearStart": 849, "yearEnd": 851, "locationName": "长安", "lat": 34.26, "lng": 108.94, "eventDescription": "回京任太学博士", "eventType": "official" },
+    { "yearStart": 851, "yearEnd": 855, "locationName": "梓州", "lat": 31.46, "lng": 104.73, "eventDescription": "丧妻后入东川节度使柳仲郢幕府", "eventType": "hardship" },
+    { "yearStart": 855, "yearEnd": 858, "locationName": "郑州", "lat": 34.76, "lng": 113.65, "eventDescription": "还郑州闲居，郁郁而终", "eventType": "hardship" }
+  ],
+  "lifeEvents": [
+    { "year": 813, "age": 0, "title": "出生", "description": "生于怀州河内，幼年丧父", "eventType": "milestone", "delayMultiplier": 1.1 },
+    { "year": 837, "age": 24, "title": "进士及第", "description": "考中进士，才华初露", "eventType": "achievement", "delayMultiplier": 0.8 },
+    { "year": 838, "age": 25, "title": "婚姻与党争", "description": "娶王茂元之女，因此被令狐綯视为背恩，卷入牛李党争", "eventType": "hardship", "delayMultiplier": 1.5 },
+    { "year": 851, "age": 38, "title": "丧妻之痛", "description": "爱妻王氏病故，写下《锦瑟》等悼亡名篇", "eventType": "hardship", "delayMultiplier": 1.5 },
+    { "year": 858, "age": 45, "title": "郁郁而终", "description": "病逝于郑州，年仅四十五岁", "eventType": "milestone", "delayMultiplier": 1.3 }
+  ]
+}
