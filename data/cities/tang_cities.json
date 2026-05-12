@@ -1,0 +1,26 @@
+{
+  "dynasty": "tang",
+  "name": "唐朝",
+  "startYear": 618,
+  "endYear": 907,
+  "mapImageSize": { "width": 2000, "height": 1500 },
+  "description": "唐朝（618年—907年），是中国历史上统一时间最长、国力最强盛的朝代之一。",
+  "cities": [
+    { "name": "长安", "modernName": "西安", "province": "京畿道", "lat": 34.26, "lng": 108.94, "mapX": 1050, "mapY": 680, "isCapital": true },
+    { "name": "洛阳", "modernName": "洛阳", "province": "都畿道", "lat": 34.62, "lng": 112.45, "mapX": 1180, "mapY": 665, "isCapital": true },
+    { "name": "成都", "modernName": "成都", "province": "剑南道", "lat": 30.57, "lng": 104.07, "mapX": 920, "mapY": 820, "isCapital": false },
+    { "name": "江陵", "modernName": "荆州", "province": "山南东道", "lat": 30.35, "lng": 112.19, "mapX": 1170, "mapY": 830, "isCapital": false },
+    { "name": "扬州", "modernName": "扬州", "province": "淮南道", "lat": 32.39, "lng": 119.42, "mapX": 1400, "mapY": 740, "isCapital": false },
+    { "name": "金陵", "modernName": "南京", "province": "江南东道", "lat": 32.06, "lng": 118.80, "mapX": 1380, "mapY": 755, "isCapital": false },
+    { "name": "杭州", "modernName": "杭州", "province": "江南东道", "lat": 30.25, "lng": 120.17, "mapX": 1420, "mapY": 820, "isCapital": false },
+    { "name": "幽州", "modernName": "北京", "province": "河北道", "lat": 39.90, "lng": 116.40, "mapX": 1280, "mapY": 460, "isCapital": false },
+    { "name": "太原", "modernName": "太原", "province": "河东道", "lat": 37.87, "lng": 112.55, "mapX": 1180, "mapY": 530, "isCapital": false },
+    { "name": "绵州", "modernName": "绵阳", "province": "剑南道", "lat": 31.46, "lng": 104.73, "mapX": 940, "mapY": 790, "isCapital": false },
+    { "name": "安陆", "modernName": "安陆", "province": "山南东道", "lat": 31.26, "lng": 113.69, "mapX": 1220, "mapY": 800, "isCapital": false },
+    { "name": "浔阳", "modernName": "九江", "province": "江南西道", "lat": 29.71, "lng": 115.97, "mapX": 1330, "mapY": 850, "isCapital": false },
+    { "name": "潭州", "modernName": "长沙", "province": "江南西道", "lat": 28.19, "lng": 112.97, "mapX": 1210, "mapY": 900, "isCapital": false },
+    { "name": "广州", "modernName": "广州", "province": "岭南道", "lat": 23.13, "lng": 113.26, "mapX": 1230, "mapY": 1100, "isCapital": false },
+    { "name": "凉州", "modernName": "武威", "province": "陇右道", "lat": 37.93, "lng": 102.64, "mapX": 820, "mapY": 530, "isCapital": false },
+    { "name": "益州", "modernName": "成都", "province": "剑南道", "lat": 30.57, "lng": 104.07, "mapX": 920, "mapY": 820, "isCapital": false }
+  ]
+}

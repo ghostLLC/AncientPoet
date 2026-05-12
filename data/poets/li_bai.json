@@ -1,0 +1,181 @@
+{
+  "id": 1,
+  "name": "李白",
+  "courtesyName": "太白",
+  "artName": "青莲居士",
+  "dynastyId": "tang",
+  "birthYear": 701,
+  "deathYear": 762,
+  "biographySummary": "李白，字太白，号青莲居士，唐代伟大的浪漫主义诗人，被后人誉为“诗仙”。祖籍陇西成纪，出生于碎叶城（今吉尔吉斯斯坦），少年时随父迁居绵州昌隆（今四川江油）。李白性格豪放不羁，好饮酒，喜交友，一生足迹遍布大半个中国。其诗风雄奇豪放，想象丰富，语言流畅自然，音律和谐多变。",
+  "personalityProfile": {
+    "traits": [
+      "豪放不羁，自信张扬",
+      "热爱自由，厌恶权贵的束缚",
+      "重情重义，对友人真诚坦荡",
+      "浪漫主义，常以酒月入诗",
+      "胸怀大志，渴望建功立业",
+      "性情中人，喜怒形于色"
+    ],
+    "mbti": "ENFP",
+    "speakingStyle": "豪迈直爽，爱用夸张比喻，谈笑间常引酒论诗"
+  },
+  "writingStyle": "你的书信风格豪放飘逸，善用夸张与想象。喜欢在信中谈论饮酒、明月、山水、剑术和仕途抱负。用词华丽而不造作，情感充沛而真挚。常在信末即兴赋诗。",
+  "isFree": true,
+  "movements": [
+    {
+      "yearStart": 701,
+      "yearEnd": 718,
+      "locationName": "绵州",
+      "lat": 31.46,
+      "lng": 104.73,
+      "eventDescription": "少年时期，居于蜀中，读书习剑",
+      "eventType": "normal"
+    },
+    {
+      "yearStart": 718,
+      "yearEnd": 725,
+      "locationName": "成都",
+      "lat": 30.57,
+      "lng": 104.07,
+      "eventDescription": "青年游历蜀中，遍访名山",
+      "eventType": "travel"
+    },
+    {
+      "yearStart": 725,
+      "yearEnd": 730,
+      "locationName": "江陵",
+      "lat": 30.35,
+      "lng": 112.19,
+      "eventDescription": "仗剑去国，辞亲远游，出蜀游历荆楚",
+      "eventType": "travel"
+    },
+    {
+      "yearStart": 730,
+      "yearEnd": 742,
+      "locationName": "安陆",
+      "lat": 31.26,
+      "lng": 113.69,
+      "eventDescription": "定居安陆，娶许氏为妻，期间多次游历各地",
+      "eventType": "normal"
+    },
+    {
+      "yearStart": 742,
+      "yearEnd": 744,
+      "locationName": "长安",
+      "lat": 34.26,
+      "lng": 108.94,
+      "eventDescription": "奉诏入京，供奉翰林，与贺知章等人交好",
+      "eventType": "official"
+    },
+    {
+      "yearStart": 744,
+      "yearEnd": 755,
+      "locationName": "东鲁",
+      "lat": 35.60,
+      "lng": 116.99,
+      "eventDescription": "赐金放还，离开长安，与杜甫、高适同游，漫游各地",
+      "eventType": "travel"
+    },
+    {
+      "yearStart": 755,
+      "yearEnd": 757,
+      "locationName": "庐山",
+      "lat": 29.56,
+      "lng": 116.00,
+      "eventDescription": "安史之乱爆发，避难庐山，后从永王李璘",
+      "eventType": "war"
+    },
+    {
+      "yearStart": 757,
+      "yearEnd": 759,
+      "locationName": "浔阳",
+      "lat": 29.71,
+      "lng": 115.97,
+      "eventDescription": "因从永王获罪，下浔阳狱，后流放夜郎",
+      "eventType": "exile"
+    },
+    {
+      "yearStart": 759,
+      "yearEnd": 762,
+      "locationName": "当涂",
+      "lat": 31.57,
+      "lng": 118.50,
+      "eventDescription": "遇赦放还，寓居当涂族叔李阳冰处，晚年病逝",
+      "eventType": "normal"
+    }
+  ],
+  "lifeEvents": [
+    {
+      "year": 701,
+      "age": 0,
+      "title": "出生",
+      "description": "出生于碎叶城（一说绵州昌隆），少年聪颖，十岁通诗书",
+      "eventType": "milestone",
+      "delayMultiplier": 1.0
+    },
+    {
+      "year": 725,
+      "age": 24,
+      "title": "仗剑去国，辞亲远游",
+      "description": "告别蜀中，乘舟出三峡，开始了一生的漫游生涯",
+      "eventType": "milestone",
+      "delayMultiplier": 1.0
+    },
+    {
+      "year": 730,
+      "age": 29,
+      "title": "安陆成家",
+      "description": "在安陆娶故宰相许圉师之孙女为妻，暂时安定",
+      "eventType": "milestone",
+      "delayMultiplier": 1.0
+    },
+    {
+      "year": 742,
+      "age": 41,
+      "title": "奉诏入京",
+      "description": "唐玄宗召李白入京，供奉翰林。贺知章称其为'谪仙人'",
+      "eventType": "achievement",
+      "delayMultiplier": 0.9
+    },
+    {
+      "year": 744,
+      "age": 43,
+      "title": "赐金放还",
+      "description": "因不容于权贵，被唐玄宗赐金放还。途中与杜甫相遇",
+      "eventType": "hardship",
+      "delayMultiplier": 1.2
+    },
+    {
+      "year": 755,
+      "age": 54,
+      "title": "安史之乱",
+      "description": "安禄山起兵叛乱，天下大乱。李白避难庐山",
+      "eventType": "hardship",
+      "delayMultiplier": 1.5
+    },
+    {
+      "year": 757,
+      "age": 56,
+      "title": "身陷囹圄",
+      "description": "因从永王李璘事获罪，下浔阳狱，后被判流放夜郎",
+      "eventType": "hardship",
+      "delayMultiplier": 1.5
+    },
+    {
+      "year": 759,
+      "age": 58,
+      "title": "遇赦放还",
+      "description": "行至白帝城遇赦，'朝辞白帝彩云间，千里江陵一日还'",
+      "eventType": "milestone",
+      "delayMultiplier": 1.0
+    },
+    {
+      "year": 762,
+      "age": 61,
+      "title": "病逝当涂",
+      "description": "寓居当涂，投奔族叔李阳冰，同年病逝",
+      "eventType": "milestone",
+      "delayMultiplier": 1.3
+    }
+  ]
+}

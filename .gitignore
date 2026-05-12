@@ -1,0 +1,48 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+!gradle-wrapper.properties
+local.properties
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# Kotlin
+*.class
+out/
+
+# Android
+androidApp/build/
+androidApp/.cxx/
+*.apk
+*.aab
+*.dex
+*.ap_
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Environment
+.env
+*.env.local
+firebase-credentials.json
+*.jks
+*.keystore
+
+# OMC state (runtime state files)
+.omc/state/
+
+# Logs
+*.log
+logs/
