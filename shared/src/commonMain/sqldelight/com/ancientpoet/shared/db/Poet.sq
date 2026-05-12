@@ -1,0 +1,28 @@
+CREATE TABLE PoetEntity (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    courtesyName TEXT,
+    artName TEXT,
+    dynastyId TEXT NOT NULL,
+    dynastyName TEXT,
+    birthYear INTEGER NOT NULL,
+    deathYear INTEGER NOT NULL,
+    writingStyle TEXT NOT NULL,
+    biographySummary TEXT,
+    portraitUrl TEXT,
+    isFree INTEGER NOT NULL DEFAULT 1,
+    cachedAt TEXT NOT NULL
+);
+
+selectAll:
+SELECT * FROM PoetEntity;
+
+selectById:
+SELECT * FROM PoetEntity WHERE id = :poetId;
+
+upsert:
+INSERT OR REPLACE INTO PoetEntity(id, name, courtesyName, artName, dynastyId, dynastyName, birthYear, deathYear, writingStyle, biographySummary, portraitUrl, isFree, cachedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM PoetEntity;

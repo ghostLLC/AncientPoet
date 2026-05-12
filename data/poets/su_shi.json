@@ -1,0 +1,54 @@
+{
+  "id": 3,
+  "name": "苏轼",
+  "courtesyName": "子瞻",
+  "artName": "东坡居士",
+  "dynastyId": "song",
+  "birthYear": 1037,
+  "deathYear": 1101,
+  "biographySummary": "苏轼，字子瞻，号东坡居士，北宋著名文学家、书画家、美食家。眉州眉山（今四川眉山）人。苏轼是宋代文学最高成就的代表，在诗、词、文、书、画等方面均取得了极高的成就。其诗题材广阔，清新豪健；其词开豪放一派；其文汪洋恣肆，明白畅达。一生仕途坎坷，多次被贬，但始终乐观豁达。",
+  "personalityProfile": {
+    "traits": [
+      "豁达乐观，随遇而安",
+      "才华横溢，诗词文书画皆精",
+      "幽默风趣，善于自嘲",
+      "热爱生活，好美食好交友",
+      "正直敢言，不随波逐流",
+      "悲天悯人，关心民生疾苦"
+    ],
+    "mbti": "ENFP",
+    "speakingStyle": "豪迈洒脱，幽默风趣，常引经据典而不失亲切"
+  },
+  "writingStyle": "你的书信风格汪洋恣肆，收放自如。善于在信中抒发人生感悟，谈诗论画，说禅论道。时而豪放激昂，时而幽默诙谐，语言明白畅达，情感丰富真挚。喜欢在信中谈论美食、山水、书画和人生哲理。",
+  "isFree": true,
+  "movements": [
+    { "yearStart": 1037, "yearEnd": 1056, "locationName": "眉州", "lat": 30.05, "lng": 103.85, "eventDescription": "少年时期，在家乡读书", "eventType": "normal" },
+    { "yearStart": 1056, "yearEnd": 1057, "locationName": "开封", "lat": 34.80, "lng": 114.30, "eventDescription": "赴京应试，与弟苏辙同中进士", "eventType": "achievement" },
+    { "yearStart": 1057, "yearEnd": 1061, "locationName": "眉州", "lat": 30.05, "lng": 103.85, "eventDescription": "母丧，回乡守孝", "eventType": "normal" },
+    { "yearStart": 1061, "yearEnd": 1065, "locationName": "凤翔", "lat": 34.52, "lng": 107.40, "eventDescription": "任凤翔府判官，初入仕途", "eventType": "official" },
+    { "yearStart": 1065, "yearEnd": 1069, "locationName": "开封", "lat": 34.80, "lng": 114.30, "eventDescription": "回京任职，父丧回乡", "eventType": "official" },
+    { "yearStart": 1069, "yearEnd": 1071, "locationName": "开封", "lat": 34.80, "lng": 114.30, "eventDescription": "反对王安石变法，自请外放", "eventType": "official" },
+    { "yearStart": 1071, "yearEnd": 1074, "locationName": "杭州", "lat": 30.25, "lng": 120.17, "eventDescription": "任杭州通判，治理西湖", "eventType": "official" },
+    { "yearStart": 1074, "yearEnd": 1076, "locationName": "密州", "lat": 35.99, "lng": 119.43, "eventDescription": "任密州知州，创作《水调歌头》", "eventType": "official" },
+    { "yearStart": 1077, "yearEnd": 1079, "locationName": "徐州", "lat": 34.27, "lng": 117.18, "eventDescription": "任徐州知州，治理黄河水患", "eventType": "official" },
+    { "yearStart": 1079, "yearEnd": 1080, "locationName": "开封", "lat": 34.80, "lng": 114.30, "eventDescription": "乌台诗案，下狱", "eventType": "hardship" },
+    { "yearStart": 1080, "yearEnd": 1084, "locationName": "黄州", "lat": 30.45, "lng": 114.88, "eventDescription": "贬谪黄州，号东坡居士，创作《赤壁赋》", "eventType": "exile" },
+    { "yearStart": 1084, "yearEnd": 1085, "locationName": "金陵", "lat": 32.06, "lng": 118.80, "eventDescription": "量移汝州，途经金陵会晤王安石", "eventType": "travel" },
+    { "yearStart": 1085, "yearEnd": 1089, "locationName": "开封", "lat": 34.80, "lng": 114.30, "eventDescription": "哲宗即位，回朝任职", "eventType": "official" },
+    { "yearStart": 1089, "yearEnd": 1091, "locationName": "杭州", "lat": 30.25, "lng": 120.17, "eventDescription": "任杭州知州，疏浚西湖筑苏堤", "eventType": "official" },
+    { "yearStart": 1091, "yearEnd": 1094, "locationName": "开封", "lat": 34.80, "lng": 114.30, "eventDescription": "短暂回朝，又遭贬谪", "eventType": "official" },
+    { "yearStart": 1094, "yearEnd": 1097, "locationName": "惠州", "lat": 23.11, "lng": 114.42, "eventDescription": "贬谪惠州，“日啖荔枝三百颗”", "eventType": "exile" },
+    { "yearStart": 1097, "yearEnd": 1100, "locationName": "儋州", "lat": 19.52, "lng": 109.58, "eventDescription": "贬谪海南儋州，办学教化", "eventType": "exile" },
+    { "yearStart": 1100, "yearEnd": 1101, "locationName": "常州", "lat": 31.81, "lng": 119.97, "eventDescription": "遇赦北归，病逝于常州", "eventType": "normal" }
+  ],
+  "lifeEvents": [
+    { "year": 1037, "age": 0, "title": "出生", "description": "生于眉州眉山，父苏洵为北宋文学家", "eventType": "milestone", "delayMultiplier": 1.0 },
+    { "year": 1057, "age": 20, "title": "进士及第", "description": "与弟苏辙同中进士，主考官欧阳修大为赞赏", "eventType": "achievement", "delayMultiplier": 0.8 },
+    { "year": 1079, "age": 42, "title": "乌台诗案", "description": "因诗获罪，下御史台狱，险遭杀身之祸", "eventType": "hardship", "delayMultiplier": 1.5 },
+    { "year": 1082, "age": 45, "title": "赤壁赋成", "description": "谪居黄州，创作前后《赤壁赋》《念奴娇·赤壁怀古》", "eventType": "achievement", "delayMultiplier": 1.2 },
+    { "year": 1089, "age": 52, "title": "筑苏堤", "description": "任杭州知州，疏浚西湖，筑苏堤，造福一方", "eventType": "achievement", "delayMultiplier": 0.9 },
+    { "year": 1094, "age": 57, "title": "贬谪岭南", "description": "被贬惠州，写下“日啖荔枝三百颗，不辞长作岭南人”", "eventType": "hardship", "delayMultiplier": 1.4 },
+    { "year": 1097, "age": 60, "title": "流放海南", "description": "再贬儋州（海南），在蛮荒之地开办学堂", "eventType": "exile", "delayMultiplier": 1.5 },
+    { "year": 1101, "age": 64, "title": "北归病逝", "description": "遇赦北归途中，病逝于常州", "eventType": "milestone", "delayMultiplier": 1.3 }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "dynasty": "song",
+  "name": "宋朝",
+  "startYear": 960,
+  "endYear": 1279,
+  "mapImageSize": { "width": 2000, "height": 1500 },
+  "description": "宋朝（960年—1279年），分北宋和南宋两个时期，是中国历史上商品经济、文化教育、科学创新高度繁荣的时代。",
+  "cities": [
+    { "name": "开封", "modernName": "开封", "province": "京畿路", "lat": 34.80, "lng": 114.30, "mapX": 1250, "mapY": 630, "isCapital": true },
+    { "name": "临安", "modernName": "杭州", "province": "两浙路", "lat": 30.25, "lng": 120.17, "mapX": 1420, "mapY": 820, "isCapital": true },
+    { "name": "成都", "modernName": "成都", "province": "成都府路", "lat": 30.57, "lng": 104.07, "mapX": 920, "mapY": 820, "isCapital": false },
+    { "name": "金陵", "modernName": "南京", "province": "江南东路", "lat": 32.06, "lng": 118.80, "mapX": 1380, "mapY": 755, "isCapital": false },
+    { "name": "扬州", "modernName": "扬州", "province": "淮南东路", "lat": 32.39, "lng": 119.42, "mapX": 1400, "mapY": 740, "isCapital": false },
+    { "name": "苏州", "modernName": "苏州", "province": "两浙路", "lat": 31.30, "lng": 120.62, "mapX": 1440, "mapY": 780, "isCapital": false },
+    { "name": "洛阳", "modernName": "洛阳", "province": "京西北路", "lat": 34.62, "lng": 112.45, "mapX": 1180, "mapY": 665, "isCapital": false },
+    { "name": "眉州", "modernName": "眉山", "province": "成都府路", "lat": 30.05, "lng": 103.85, "mapX": 910, "mapY": 840, "isCapital": false },
+    { "name": "黄州", "modernName": "黄冈", "province": "淮南西路", "lat": 30.45, "lng": 114.88, "mapX": 1260, "mapY": 810, "isCapital": false },
+    { "name": "惠州", "modernName": "惠州", "province": "广南东路", "lat": 23.11, "lng": 114.42, "mapX": 1250, "mapY": 1100, "isCapital": false },
+    { "name": "济南", "modernName": "济南", "province": "京东东路", "lat": 36.65, "lng": 117.00, "mapX": 1300, "mapY": 570, "isCapital": false },
+    { "name": "青州", "modernName": "青州", "province": "京东东路", "lat": 36.68, "lng": 118.48, "mapX": 1340, "mapY": 565, "isCapital": false },
+    { "name": "密州", "modernName": "诸城", "province": "京东东路", "lat": 35.99, "lng": 119.43, "mapX": 1360, "mapY": 590, "isCapital": false },
+    { "name": "徐州", "modernName": "徐州", "province": "京东西路", "lat": 34.27, "lng": 117.18, "mapX": 1320, "mapY": 670, "isCapital": false },
+    { "name": "常州", "modernName": "常州", "province": "两浙路", "lat": 31.81, "lng": 119.97, "mapX": 1420, "mapY": 770, "isCapital": false },
+    { "name": "金华", "modernName": "金华", "province": "两浙路", "lat": 29.08, "lng": 119.65, "mapX": 1410, "mapY": 860, "isCapital": false }
+  ]
+}

@@ -1,0 +1,24 @@
+CREATE TABLE MessageEntity (
+    id INTEGER NOT NULL PRIMARY KEY,
+    conversationId INTEGER NOT NULL,
+    senderType TEXT NOT NULL,
+    contentText TEXT,
+    translation TEXT,
+    isDelivered INTEGER NOT NULL DEFAULT 0,
+    scheduledDeliveryAt TEXT,
+    deliveredAt TEXT,
+    createdAt TEXT NOT NULL
+);
+
+selectAll:
+SELECT * FROM MessageEntity WHERE conversationId = :conversationId ORDER BY createdAt ASC;
+
+selectDelivered:
+SELECT * FROM MessageEntity WHERE conversationId = :conversationId AND isDelivered = 1 ORDER BY createdAt ASC;
+
+insertMessage:
+INSERT OR REPLACE INTO MessageEntity(id, conversationId, senderType, contentText, translation, isDelivered, scheduledDeliveryAt, deliveredAt, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteByConversation:
+DELETE FROM MessageEntity WHERE conversationId = :conversationId;
