@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>鸿雁 - 像当时一样交流</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&amp;family=Noto+Serif+SC:wght@200..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#881e15",
+                      "on-error": "#ffffff",
+                      "on-surface-variant": "#58413e",
+                      "on-tertiary-container": "#fbfffa",
+                      "inverse-primary": "#ffb4a9",
+                      "on-tertiary-fixed-variant": "#2c4d3d",
+                      "surface-container": "#efecff",
+                      "primary": "#a73428",
+                      "on-secondary": "#ffffff",
+                      "jade-green": "#6B8E7B",
+                      "on-secondary-fixed-variant": "#5c4200",
+                      "secondary-container": "#fdd588",
+                      "secondary": "#775a19",
+                      "on-primary-fixed": "#410000",
+                      "error": "#ba1a1a",
+                      "tertiary": "#426453",
+                      "warm-gray": "#8B8178",
+                      "surface-container-highest": "#e2e0fc",
+                      "primary-fixed": "#ffdad5",
+                      "primary-container": "#c84c3d",
+                      "on-background": "#1a1a2e",
+                      "tertiary-container": "#5a7d6b",
+                      "on-secondary-container": "#775b1a",
+                      "on-error-container": "#93000a",
+                      "surface": "#fcf8ff",
+                      "outline-variant": "#dfbfba",
+                      "outline": "#8b716d",
+                      "error-container": "#ffdad6",
+                      "primary-fixed-dim": "#ffb4a9",
+                      "surface-container-lowest": "#ffffff",
+                      "ink-black": "#1A1A2E",
+                      "imperial-gold": "#C8A45C",
+                      "inverse-surface": "#2f2e43",
+                      "surface-container-low": "#f5f2ff",
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#aacfba",
+                      "background": "#fcf8ff",
+                      "tertiary-fixed": "#c6ebd5",
+                      "surface-container-high": "#e8e5ff",
+                      "on-tertiary": "#ffffff",
+                      "surface-bright": "#fcf8ff",
+                      "on-surface": "#1a1a2e",
+                      "sky-blue": "#7BA7BC",
+                      "on-tertiary-fixed": "#002114",
+                      "secondary-fixed": "#ffdea2",
+                      "on-primary-container": "#fffdff",
+                      "on-secondary-fixed": "#261900",
+                      "inverse-on-surface": "#f2efff",
+                      "surface-dim": "#dad7f3",
+                      "surface-variant": "#e2e0fc",
+                      "secondary-fixed-dim": "#e8c176",
+                      "vermilion-red": "#C84C3D",
+                      "surface-tint": "#a93629",
+                      "rice-paper": "#F5F0E8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "margin-tablet": "24px",
+                      "margin-mobile": "16px",
+                      "card-gap": "8px",
+                      "paragraph-gap": "16px",
+                      "card-padding": "16px"
+              },
+              "fontFamily": {
+                      "body-standard": [
+                              "Literata"
+                      ],
+                      "label-ui": [
+                              "Source Sans Three"
+                      ],
+                      "headline-poet": [
+                              "Noto Serif CJK SC"
+                      ],
+                      "headline-display": [
+                              "Noto Serif CJK SC"
+                      ],
+                      "body-letter": [
+                              "Literata"
+                      ]
+              },
+              "fontSize": {
+                      "body-standard": [
+                              "16px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-ui": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-poet": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-display": [
+                              "48px",
+                              {
+                                      "lineHeight": "64px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-letter": [
+                              "18px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-rice-paper text-ink-black h-screen w-screen overflow-hidden flex flex-col relative antialiased selection:bg-surface-variant selection:text-ink-black">
+<!-- Central Ink Spread Visual Element -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+<div class="w-[120vw] md:w-[80vw] max-w-[800px] aspect-square bg-no-repeat bg-center bg-contain opacity-40 mix-blend-multiply" data-alt="A highly detailed, organic ink wash spreading outward slowly on textured off-white rice paper. The ink is a very pale, diluted dark gray with subtle gradations, creating a soft, misty halo effect in the center of the frame. The style mimics traditional Chinese painting techniques (shuimo), appearing minimalist, quiet, and deeply atmospheric. The lighting is soft and natural, emphasizing the tactile quality of paper and wet ink." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDmUUwTZhuf_8M4IVHsTQHZhnRl8p_fAzfMH_eTpxfXoZHPz2vYYTmizl9HOpYr9RZC_enO7KpnoMS8UXtgcf3MYbntP6RIyfqJXsEo6uKEWwb-ZaXu2v-9CEHA_9YHTwQYpbXvVV8OX-KkaIwFBT-aFF-OzB5n4pfWph5jJhAl6i3AtTjnNnU0D3nDCLyn8nuUdo__5YlOoT1lW3oc0cZPPl-Yekn0LSSyEzekP0vLigt1_7DKAiat0K30LZsYlq0HM9MGGJqEDR0n')">
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col items-center justify-center relative z-10 px-margin-mobile">
+<!-- Brand Core -->
+<div class="flex flex-col items-center space-y-margin-tablet transform -translate-y-8">
+<!-- Brand Name: 鸿雁 -->
+<h1 class="font-headline-display text-headline-display text-vermilion-red tracking-[0.25em] pl-[0.25em]">
+                鸿雁
+            </h1>
+<!-- Slogan -->
+<p class="font-body-standard text-body-standard text-on-surface-variant tracking-[0.5em] pl-[0.5em] opacity-80">
+                像当时一样交流
+            </p>
+</div>
+</main>
+<!-- Bottom Cloud Motif Decoration -->
+<div class="absolute bottom-0 w-full h-1/3 max-h-[300px] pointer-events-none z-0">
+<div class="w-full h-full bg-no-repeat bg-bottom bg-cover opacity-30 mix-blend-multiply" data-alt="Subtle, elegant traditional Chinese cloud motifs (xiangyun) drifting along the bottom edge of the composition. The clouds are drawn in very pale, diluted gray ink strokes, resting softly on a warm rice paper texture. The pattern is sparse, minimalist, and deeply integrated into the background, providing a sense of weightless atmosphere without distracting from the center. High-end, ancient poetic aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCmWxIYeIihUBvaGskR4H6UxkUL2BuR_grQP1OKTt3U7L7CSdsoa0U8cZTdH51LWeJSS7XwNhjVV1tNAPnEFXXn7SDmEliriwy0JupuukM393gSdme9rj4r9m019-4RLbfl66tiFLsvwxbgv5-9E12S9HjhKR7iNAX8M5NbeIPbicKmalOmFUo8Vq0B-QebdNz0xug_4fvbcR986K8nUt0mH_fmP0T_tZj3EaYZ6PKaWZG_8S_-M1Dw8A47MiAv8Ro7TiVveVE8aJRt')">
+</div>
+</div>
+</body></html>

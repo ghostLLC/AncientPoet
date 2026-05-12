@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>驿路地图 - Map Journey</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400..700&amp;family=Noto+Serif+SC:wght@400;600;700&amp;family=Source+Sans+3:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#881e15",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#58413e",
+                    "on-tertiary-container": "#fbfffa",
+                    "inverse-primary": "#ffb4a9",
+                    "on-tertiary-fixed-variant": "#2c4d3d",
+                    "surface-container": "#efecff",
+                    "primary": "#a73428",
+                    "on-secondary": "#ffffff",
+                    "jade-green": "#6B8E7B",
+                    "on-secondary-fixed-variant": "#5c4200",
+                    "secondary-container": "#fdd588",
+                    "secondary": "#775a19",
+                    "on-primary-fixed": "#410000",
+                    "error": "#ba1a1a",
+                    "tertiary": "#426453",
+                    "warm-gray": "#8B8178",
+                    "surface-container-highest": "#e2e0fc",
+                    "primary-fixed": "#ffdad5",
+                    "primary-container": "#c84c3d",
+                    "on-background": "#1a1a2e",
+                    "tertiary-container": "#5a7d6b",
+                    "on-secondary-container": "#775b1a",
+                    "on-error-container": "#93000a",
+                    "surface": "#fcf8ff",
+                    "outline-variant": "#dfbfba",
+                    "outline": "#8b716d",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#ffb4a9",
+                    "surface-container-lowest": "#ffffff",
+                    "ink-black": "#1A1A2E",
+                    "imperial-gold": "#C8A45C",
+                    "inverse-surface": "#2f2e43",
+                    "surface-container-low": "#f5f2ff",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#aacfba",
+                    "background": "#fcf8ff",
+                    "tertiary-fixed": "#c6ebd5",
+                    "surface-container-high": "#e8e5ff",
+                    "on-tertiary": "#ffffff",
+                    "surface-bright": "#fcf8ff",
+                    "on-surface": "#1a1a2e",
+                    "sky-blue": "#7BA7BC",
+                    "on-tertiary-fixed": "#002114",
+                    "secondary-fixed": "#ffdea2",
+                    "on-primary-container": "#fffdff",
+                    "on-secondary-fixed": "#261900",
+                    "inverse-on-surface": "#f2efff",
+                    "surface-dim": "#dad7f3",
+                    "surface-variant": "#e2e0fc",
+                    "secondary-fixed-dim": "#e8c176",
+                    "vermilion-red": "#C84C3D",
+                    "surface-tint": "#a93629",
+                    "rice-paper": "#F5F0E8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "margin-tablet": "24px",
+                    "margin-mobile": "16px",
+                    "card-gap": "8px",
+                    "paragraph-gap": "16px",
+                    "card-padding": "16px"
+            },
+            "fontFamily": {
+                    "body-standard": ["Literata", "serif"],
+                    "label-ui": ["Source Sans 3", "sans-serif"],
+                    "headline-poet": ["Noto Serif SC", "serif"],
+                    "headline-display": ["Noto Serif SC", "serif"],
+                    "body-letter": ["Literata", "serif"]
+            },
+            "fontSize": {
+                    "body-standard": ["16px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-ui": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "headline-poet": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                    "headline-display": ["48px", {"lineHeight": "64px", "fontWeight": "700"}],
+                    "body-letter": ["18px", {"lineHeight": "32px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-icon {
+          font-variation-settings: 'FILL' 1;
+        }
+        /* Custom font application for semantic clarity */
+        .font-headline-poet { font-family: 'Noto Serif SC', serif; }
+        .font-body-standard { font-family: 'Literata', serif; }
+        .font-label-ui { font-family: 'Source Sans 3', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-standard text-body-standard antialiased h-screen overflow-hidden select-none">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-rice-paper shadow-sm">
+<button class="text-primary hover:bg-surface-container-low transition-colors duration-500 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-poet text-headline-poet text-vermilion-red tracking-widest">鸿雁</h1>
+<button class="text-vermilion-red hover:bg-surface-container-low transition-colors duration-500 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">history_edu</span>
+</button>
+</header>
+<!-- Map Canvas (Main Content) -->
+<main class="relative w-full h-full pt-16 pb-20 md:pb-0 bg-rice-paper/50">
+<!-- Faded Ink Wash Background -->
+<div class="absolute inset-0 w-full h-full bg-cover bg-center opacity-70 mix-blend-multiply" data-alt="A textured, faded antique Chinese map background painted on traditional rice paper. The artwork features delicate, minimalist ink-wash brushstrokes depicting rolling mountains and meandering rivers in subtle shades of warm grey and pale sepia. The overall aesthetic embodies 'Slowness as a Feature' with a serene, historical atmosphere, devoid of modern clutter. Soft, diffused lighting enhances the tactile, fibrous texture of the paper." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA__frIZmDzQaj3TmTkpQ7D39IJfEbY1z3tWsd8D6FlTQqmXbVRSnSps78MPr5Nsr-22NABbOj1FYIyhVana-WZvUdKsFRqU8geFL4PkwdNbfJUv4ihBT8soXe8t6jh6tuEQZYhXCZFvKwqSLWbwV5Ncbbp9Ak--ZOvTGVA_4CVyHj_24DafdgCFCmIew0Xj4NXwvqOd07qiQ0robVri0NZK2V3S7pBj_jMk67zFghlyY1P5JhikrQIBSi67mPZfoh7di12q9sMvgvY');">
+</div>
+<!-- Interactive Map Layer -->
+<div class="relative w-full h-full max-w-4xl mx-auto">
+<!-- SVG Path (The Journey Line) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="none">
+<!-- Path from Chang'an to Luoyang -->
+<path class="opacity-60" d="M 30% 40% Q 50% 25% 70% 60%" fill="none" stroke="#8B8178" stroke-dasharray="6,6" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+<!-- Poet Location (Chang'an) -->
+<div class="absolute top-[40%] left-[30%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer">
+<!-- Golden Ink Shadow -->
+<div class="relative flex items-center justify-center w-12 h-12">
+<div class="absolute inset-0 bg-imperial-gold/30 rounded-full blur-md"></div>
+<div class="absolute inset-2 bg-imperial-gold/40 rounded-full blur-sm"></div>
+<div class="w-3 h-3 bg-imperial-gold rounded-full z-10 shadow-[0_0_8px_rgba(200,164,92,0.8)]"></div>
+</div>
+<div class="mt-2 text-center">
+<span class="block font-headline-poet text-[20px] leading-tight text-ink-black tracking-widest font-bold">长安</span>
+<span class="block font-label-ui text-label-ui text-warm-gray mt-1">诗圣居所</span>
+</div>
+</div>
+<!-- User Location (Luoyang) -->
+<div class="absolute top-[60%] left-[70%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer">
+<!-- Vermilion Seal -->
+<div class="w-10 h-10 border-2 border-vermilion-red flex items-center justify-center transform rotate-3 bg-rice-paper/80 backdrop-blur-sm shadow-sm relative before:content-[''] before:absolute before:inset-[2px] before:border before:border-vermilion-red/50">
+<span class="font-headline-poet text-[18px] text-vermilion-red leading-none font-bold">吾</span>
+</div>
+<div class="mt-3 text-center">
+<span class="block font-headline-poet text-[20px] leading-tight text-ink-black tracking-widest font-bold">洛阳</span>
+<span class="block font-label-ui text-label-ui text-warm-gray mt-1">当前位置</span>
+</div>
+</div>
+<!-- Messenger on Path -->
+<!-- Positioned roughly at 60% along the quadratic curve -->
+<div class="absolute top-[43%] left-[56%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+<div class="bg-rice-paper/90 rounded-full p-1.5 border border-outline-variant/60 shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-ink-black text-[20px]">SelectionInverse</span>
+</div>
+</div>
+</div>
+<!-- Bottom Status Panel (Glassmorphism / Rice Paper Overlay) -->
+<div class="absolute bottom-28 md:bottom-12 left-4 right-4 md:w-[480px] md:left-1/2 md:-translate-x-1/2 z-40">
+<div class="bg-rice-paper/85 backdrop-blur-md rounded-xl p-6 border border-outline-variant/40 shadow-[0_8px_32px_rgba(26,26,46,0.05)] relative overflow-hidden">
+<!-- Decorative Corner Seal -->
+<div class="absolute -top-4 -right-4 w-20 h-20 opacity-10 pointer-events-none flex items-center justify-center transform rotate-12">
+<span class="material-symbols-outlined text-[80px] text-vermilion-red">local_post_office</span>
+</div>
+<div class="flex flex-col gap-4 relative z-10">
+<div>
+<h2 class="font-headline-poet text-[24px] font-bold text-ink-black mb-1">距离长安三日路程</h2>
+<p class="font-body-standard text-body-standard text-on-surface-variant">信使正翻越秦岭，山高水长，见字如面。</p>
+</div>
+<!-- Progress Indicator -->
+<div class="flex items-center gap-4 mt-2">
+<span class="font-label-ui text-label-ui text-warm-gray w-8 text-right">洛阳</span>
+<div class="flex-1 h-1.5 bg-surface-variant rounded-full overflow-hidden relative">
+<div class="absolute left-0 top-0 h-full bg-imperial-gold w-[65%] rounded-full"></div>
+</div>
+<span class="font-label-ui text-label-ui text-warm-gray w-8">长安</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-margin-mobile pb-safe bg-rice-paper h-20 md:hidden border-t border-outline-variant shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
+<!-- Tab 1: 驿路 (Active) -->
+<button class="flex flex-col items-center justify-center text-vermilion-red p-2 scale-110 transition-transform duration-700 w-16 group">
+<div class="relative flex flex-col items-center">
+<span class="material-symbols-outlined fill-icon mb-1">map</span>
+<span class="font-label-ui text-label-ui font-bold">驿路</span>
+<!-- Active dot indicator -->
+<div class="absolute -bottom-2 w-1 h-1 rounded-full bg-vermilion-red"></div>
+</div>
+</button>
+<!-- Tab 2: 传书 (Inactive) -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 w-16 group">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform duration-300">mail</span>
+<span class="font-label-ui text-label-ui">传书</span>
+</button>
+<!-- Tab 3: 溯源 (Inactive) -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 w-16 group">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform duration-300">timeline</span>
+<span class="font-label-ui text-label-ui">溯源</span>
+</button>
+<!-- Tab 4: 吾身 (Inactive) -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 w-16 group">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform duration-300">person</span>
+<span class="font-label-ui text-label-ui">吾身</span>
+</button>
+</nav>
+</body></html>

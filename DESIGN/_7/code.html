@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>文苑 - 驿路</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&amp;family=Noto+Serif+SC:wght@200..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#881e15",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#58413e",
+                        "on-tertiary-container": "#fbfffa",
+                        "inverse-primary": "#ffb4a9",
+                        "on-tertiary-fixed-variant": "#2c4d3d",
+                        "surface-container": "#efecff",
+                        "primary": "#a73428",
+                        "on-secondary": "#ffffff",
+                        "jade-green": "#6B8E7B",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "secondary-container": "#fdd588",
+                        "secondary": "#775a19",
+                        "on-primary-fixed": "#410000",
+                        "error": "#ba1a1a",
+                        "tertiary": "#426453",
+                        "warm-gray": "#8B8178",
+                        "surface-container-highest": "#e2e0fc",
+                        "primary-fixed": "#ffdad5",
+                        "primary-container": "#c84c3d",
+                        "on-background": "#1a1a2e",
+                        "tertiary-container": "#5a7d6b",
+                        "on-secondary-container": "#775b1a",
+                        "on-error-container": "#93000a",
+                        "surface": "#fcf8ff",
+                        "outline-variant": "#dfbfba",
+                        "outline": "#8b716d",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#ffb4a9",
+                        "surface-container-lowest": "#ffffff",
+                        "ink-black": "#1A1A2E",
+                        "imperial-gold": "#C8A45C",
+                        "inverse-surface": "#2f2e43",
+                        "surface-container-low": "#f5f2ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#aacfba",
+                        "background": "#fcf8ff",
+                        "tertiary-fixed": "#c6ebd5",
+                        "surface-container-high": "#e8e5ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fcf8ff",
+                        "on-surface": "#1a1a2e",
+                        "sky-blue": "#7BA7BC",
+                        "on-tertiary-fixed": "#002114",
+                        "secondary-fixed": "#ffdea2",
+                        "on-primary-container": "#fffdff",
+                        "on-secondary-fixed": "#261900",
+                        "inverse-on-surface": "#f2efff",
+                        "surface-dim": "#dad7f3",
+                        "surface-variant": "#e2e0fc",
+                        "secondary-fixed-dim": "#e8c176",
+                        "vermilion-red": "#C84C3D",
+                        "surface-tint": "#a93629",
+                        "rice-paper": "#F5F0E8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-tablet": "24px",
+                        "margin-mobile": "16px",
+                        "card-gap": "8px",
+                        "paragraph-gap": "16px",
+                        "card-padding": "16px"
+                    },
+                    "fontFamily": {
+                        "body-standard": ["Literata", "serif"],
+                        "label-ui": ["Source Sans 3", "sans-serif"],
+                        "headline-poet": ["Noto Serif SC", "serif"],
+                        "headline-display": ["Noto Serif SC", "serif"],
+                        "body-letter": ["Literata", "serif"]
+                    },
+                    "fontSize": {
+                        "body-standard": ["16px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-ui": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-poet": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-display": ["48px", { "lineHeight": "64px", "fontWeight": "700" }],
+                        "body-letter": ["18px", { "lineHeight": "32px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar to mimic physical edge */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F0E8; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dfbfba; 
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-rice-paper text-ink-black font-body-standard antialiased selection:bg-vermilion-red/20 selection:text-ink-black min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-50 bg-rice-paper shadow-sm flex justify-between items-center w-full px-margin-mobile h-16">
+<button class="text-on-surface-variant hover:bg-surface-container-low transition-colors duration-500 rounded-full p-2 flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-poet text-headline-poet text-vermilion-red tracking-widest">鸿雁</h1>
+<button class="text-on-surface-variant hover:bg-surface-container-low transition-colors duration-500 rounded-full p-2 flex items-center justify-center">
+<span class="material-symbols-outlined">history_edu</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-32 px-4 md:px-margin-tablet flex flex-col items-center">
+<!-- 拓印 Entry (Rubbing/Create Action) -->
+<div class="w-full max-w-3xl flex justify-center mb-16">
+<button class="group flex items-center gap-3 px-8 py-3 border border-outline/40 bg-rice-paper hover:bg-surface-container-low transition-colors duration-500 shadow-[0_4px_20px_-10px_rgba(139,113,109,0.3)]">
+<span class="material-symbols-outlined text-vermilion-red" style="font-variation-settings: 'FILL' 1;">edit_document</span>
+<span class="font-headline-poet text-body-standard tracking-widest text-ink-black group-hover:text-vermilion-red transition-colors duration-500">拓印卷帙</span>
+</button>
+</div>
+<!-- Community Feed: The Scroll Paintings -->
+<div class="w-full max-w-3xl flex flex-col gap-24">
+<!-- Scroll Item 1 -->
+<article class="relative w-full bg-rice-paper min-h-[618px] border-y-2 border-outline-variant/30 py-16 px-6 md:px-16 flex flex-col justify-between shadow-[0_20px_40px_-20px_rgba(139,113,109,0.1)]">
+<!-- Subtle vertical alignment line to mimic ancient slips -->
+<div class="absolute top-0 bottom-0 right-[20%] w-px bg-outline-variant/10 pointer-events-none"></div>
+<div class="absolute top-0 bottom-0 right-[40%] w-px bg-outline-variant/10 pointer-events-none"></div>
+<div class="absolute top-0 bottom-0 right-[60%] w-px bg-outline-variant/10 pointer-events-none"></div>
+<div class="absolute top-0 bottom-0 right-[80%] w-px bg-outline-variant/10 pointer-events-none"></div>
+<div class="z-10 w-full">
+<header class="mb-12 flex justify-between items-end border-b border-outline-variant/20 pb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border border-outline flex items-center justify-center bg-surface-container-low overflow-hidden">
+<span class="material-symbols-outlined text-warm-gray">person</span>
+</div>
+<span class="font-label-ui text-label-ui text-warm-gray tracking-wider">归客</span>
+</div>
+<time class="font-label-ui text-label-ui text-warm-gray">甲辰年 孟春</time>
+</header>
+<!-- Conversation Flow -->
+<div class="flex flex-col gap-12 max-w-xl mx-auto">
+<!-- User Message (Pale Vermilion) -->
+<div class="self-end max-w-[85%] bg-primary-fixed/20 p-6 md:p-8 rounded-sm border border-vermilion-red/10 relative">
+<p class="font-body-letter text-body-letter text-ink-black leading-loose tracking-wide">
+                                先生，连日春雨绵绵，庭院里落花满地，望着这残红，心中总觉有些许怅然。世间美好，为何总这般短暂？
+                            </p>
+</div>
+<!-- Poet Message (Rice Paper) -->
+<div class="self-start max-w-[85%] bg-rice-paper p-6 md:p-8 rounded-sm border border-outline/20 relative shadow-sm">
+<p class="font-body-letter text-body-letter text-ink-black leading-loose tracking-wide">
+                                莫听穿林打叶声，何妨吟啸且徐行。春花虽落，化作春泥更护花。万物荣枯皆有定时，执念于一时之衰落，便错过了雨后初晴的清新。把酒临风，且看这天地悠悠。
+                            </p>
+<!-- Signature Seal -->
+<div class="absolute -bottom-6 -right-4 w-14 h-14 border-2 border-vermilion-red flex items-center justify-center bg-rice-paper opacity-90 transform rotate-2">
+<span class="font-headline-poet text-vermilion-red text-[18px] leading-tight text-center">东坡<br/>居士</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<footer class="mt-20 z-10 flex justify-center border-t border-outline-variant/20 pt-8">
+<button class="flex flex-col items-center gap-2 group">
+<span class="material-symbols-outlined text-outline group-hover:text-ink-black transition-colors duration-500 text-3xl" style="font-variation-settings: 'FILL' 0;">water_drop</span>
+<span class="font-label-ui text-[12px] text-warm-gray group-hover:text-ink-black tracking-widest">润墨</span>
+</button>
+</footer>
+</article>
+<!-- Scroll Item 2 -->
+<article class="relative w-full bg-rice-paper min-h-[618px] border-y-2 border-outline-variant/30 py-16 px-6 md:px-16 flex flex-col justify-between shadow-[0_20px_40px_-20px_rgba(139,113,109,0.1)]">
+<!-- Subtle vertical alignment line -->
+<div class="absolute top-0 bottom-0 right-[30%] w-px bg-outline-variant/10 pointer-events-none"></div>
+<div class="absolute top-0 bottom-0 right-[70%] w-px bg-outline-variant/10 pointer-events-none"></div>
+<div class="z-10 w-full">
+<header class="mb-12 flex justify-between items-end border-b border-outline-variant/20 pb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border border-outline flex items-center justify-center bg-surface-container-low overflow-hidden">
+<span class="material-symbols-outlined text-warm-gray">person</span>
+</div>
+<span class="font-label-ui text-label-ui text-warm-gray tracking-wider">远山</span>
+</div>
+<time class="font-label-ui text-label-ui text-warm-gray">甲辰年 仲春</time>
+</header>
+<!-- Conversation Flow -->
+<div class="flex flex-col gap-12 max-w-xl mx-auto">
+<!-- User Message (Pale Vermilion) -->
+<div class="self-end max-w-[85%] bg-primary-fixed/20 p-6 md:p-8 rounded-sm border border-vermilion-red/10 relative">
+<p class="font-body-letter text-body-letter text-ink-black leading-loose tracking-wide">
+                                昨夜梦回长安，繁华如锦。醒来却见窗外明月孤影，一时竟不知身在何处。
+                            </p>
+</div>
+<!-- Poet Message (Rice Paper) -->
+<div class="self-start max-w-[85%] bg-rice-paper p-6 md:p-8 rounded-sm border border-outline/20 relative shadow-sm">
+<p class="font-body-letter text-body-letter text-ink-black leading-loose tracking-wide">
+                                浮生若梦，为欢几何？长安的牡丹开得虽艳，却不如这山间明月来得清冷长久。举杯邀明月，对影成三人。这般寂寥，也是难得的清境。
+                            </p>
+<!-- Signature Seal -->
+<div class="absolute -bottom-6 -right-4 w-14 h-14 border-2 border-vermilion-red flex items-center justify-center bg-rice-paper opacity-90 transform -rotate-3">
+<span class="font-headline-poet text-vermilion-red text-[18px] leading-tight text-center">青莲<br/>居士</span>
+</div>
+</div>
+<!-- Attached "Drawing" -->
+<div class="w-full p-4 bg-surface-container-lowest border border-outline-variant shadow-sm mt-4">
+<div class="w-full h-48 bg-cover bg-center" data-alt="A minimalist traditional Chinese ink wash painting depicting a solitary bright moon shining over a distant, misty mountain peak. The brushstrokes are loose and expressive, utilizing varying shades of deep ink black against a textured rice paper background. The scene evokes a sense of quiet isolation and profound antiquity, perfectly capturing the aesthetic of ancient poetry." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAdaSNs8IbLMkaShwYrkz3NCbtngcwdCx4R_I__xU5DKN6lymPFfJ_RmFHNAgX2OVUmIiZBegqOA5J2Z7sKru5r7yJ-rxbn5-MehSbTtjZHrzJz5k7WvWOW4Q7VZ3j-iiWqcXNloxfdMEZMK2dmc9wMgabN_wHhS94hj0ejSCBiF6HiwmC5KJXP2xH7pQPyBBrggR1SUeqOuZMyN_cUCJu6SrMmknne0sMozMkb47i4tP17z03iRNj3elcfN5j5dwPx9ViJFclENin5');"></div>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<footer class="mt-20 z-10 flex justify-center border-t border-outline-variant/20 pt-8">
+<button class="flex flex-col items-center gap-2 group">
+<span class="material-symbols-outlined text-outline group-hover:text-ink-black transition-colors duration-500 text-3xl" style="font-variation-settings: 'FILL' 0;">water_drop</span>
+<span class="font-label-ui text-[12px] text-warm-gray group-hover:text-ink-black tracking-widest">润墨</span>
+</button>
+</footer>
+</article>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<div class="md:hidden">
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-margin-mobile pb-safe h-20 border-t border-outline-variant bg-rice-paper">
+<!-- Active Tab: 驿路 -->
+<button class="flex flex-col items-center justify-center text-vermilion-red p-2 scale-110 transition-transform duration-700">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-label-ui text-label-ui mt-1">驿路</span>
+</button>
+<!-- Inactive Tabs -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500">
+<span class="material-symbols-outlined">mail</span>
+<span class="font-label-ui text-label-ui mt-1">传书</span>
+</button>
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500">
+<span class="material-symbols-outlined">timeline</span>
+<span class="font-label-ui text-label-ui mt-1">溯源</span>
+</button>
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-ui text-label-ui mt-1">吾身</span>
+</button>
+</nav>
+</div>
+</body></html>

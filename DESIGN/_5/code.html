@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>诗人详情 - 李白</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&amp;family=Noto+Serif+SC:wght@200..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#881e15",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#58413e",
+                        "on-tertiary-container": "#fbfffa",
+                        "inverse-primary": "#ffb4a9",
+                        "on-tertiary-fixed-variant": "#2c4d3d",
+                        "surface-container": "#efecff",
+                        "primary": "#a73428",
+                        "on-secondary": "#ffffff",
+                        "jade-green": "#6B8E7B",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "secondary-container": "#fdd588",
+                        "secondary": "#775a19",
+                        "on-primary-fixed": "#410000",
+                        "error": "#ba1a1a",
+                        "tertiary": "#426453",
+                        "warm-gray": "#8B8178",
+                        "surface-container-highest": "#e2e0fc",
+                        "primary-fixed": "#ffdad5",
+                        "primary-container": "#c84c3d",
+                        "on-background": "#1a1a2e",
+                        "tertiary-container": "#5a7d6b",
+                        "on-secondary-container": "#775b1a",
+                        "on-error-container": "#93000a",
+                        "surface": "#fcf8ff",
+                        "outline-variant": "#dfbfba",
+                        "outline": "#8b716d",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#ffb4a9",
+                        "surface-container-lowest": "#ffffff",
+                        "ink-black": "#1A1A2E",
+                        "imperial-gold": "#C8A45C",
+                        "inverse-surface": "#2f2e43",
+                        "surface-container-low": "#f5f2ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#aacfba",
+                        "background": "#fcf8ff",
+                        "tertiary-fixed": "#c6ebd5",
+                        "surface-container-high": "#e8e5ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fcf8ff",
+                        "on-surface": "#1a1a2e",
+                        "sky-blue": "#7BA7BC",
+                        "on-tertiary-fixed": "#002114",
+                        "secondary-fixed": "#ffdea2",
+                        "on-primary-container": "#fffdff",
+                        "on-secondary-fixed": "#261900",
+                        "inverse-on-surface": "#f2efff",
+                        "surface-dim": "#dad7f3",
+                        "surface-variant": "#e2e0fc",
+                        "secondary-fixed-dim": "#e8c176",
+                        "vermilion-red": "#C84C3D",
+                        "surface-tint": "#a93629",
+                        "rice-paper": "#F5F0E8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-tablet": "24px",
+                        "margin-mobile": "16px",
+                        "card-gap": "8px",
+                        "paragraph-gap": "16px",
+                        "card-padding": "16px"
+                    },
+                    "fontFamily": {
+                        "body-standard": ["Literata", "serif"],
+                        "label-ui": ["Source Sans Three", "sans-serif"],
+                        "headline-poet": ["Noto Serif CJK SC", "serif"],
+                        "headline-display": ["Noto Serif CJK SC", "serif"],
+                        "body-letter": ["Literata", "serif"]
+                    },
+                    "fontSize": {
+                        "body-standard": ["16px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-ui": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-poet": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-display": ["48px", { "lineHeight": "64px", "fontWeight": "700" }],
+                        "body-letter": ["18px", { "lineHeight": "32px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-rice-paper text-on-surface font-body-standard antialiased min-h-screen selection:bg-surface-variant selection:text-ink-black relative">
+<!-- TopAppBar from JSON -->
+<header class="bg-rice-paper dark:bg-rice-paper flex justify-between items-center w-full px-margin-mobile h-16 shadow-sm fixed top-0 left-0 right-0 z-50">
+<button class="text-vermilion-red dark:text-vermilion-red hover:bg-surface-container-low transition-colors duration-500 rounded-full w-10 h-10 flex items-center justify-center opacity-80 transition-opacity duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline-poet text-headline-poet text-vermilion-red">鸿雁</h1>
+<button class="text-vermilion-red dark:text-vermilion-red hover:bg-surface-container-low transition-colors duration-500 rounded-full w-10 h-10 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history_edu</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-tablet max-w-3xl mx-auto">
+<!-- Hero Profile Section -->
+<section class="flex flex-col items-center mb-12">
+<!-- Ink Wash Portrait -->
+<div class="w-48 h-64 md:w-64 md:h-80 rounded-xl overflow-hidden shadow-sm border border-outline-variant/30 mb-6 relative bg-surface-container-low">
+<div class="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-90" data-alt="A traditional Chinese ink wash painting portrait of the Tang Dynasty poet Li Bai. The artwork utilizes varying shades of deep black ink on textured, aged rice paper, showcasing expressive, flowing brushstrokes that capture his free-spirited nature. The lighting is soft and ambient, emphasizing the tactile quality of the paper. A subtle vermilion red seal stamp in the corner adds a singular touch of vibrant color to the monochromatic light-mode aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBFUQ05_nZw9xcucU1jCy7Q0-EVeHGGiA-sCE6ZWoS1BwG3OgJh6n-j77tMXQ9DirAs0O0_bRDIch1ZzZjVGoNa0YPsEvag4qBjDdottRYinnvC1kfy_ayfl1VcUiJ5VhTqG1b9HzhNc2QJ286PkCm1m8uEwK3aphsdWyZcybLWKN-yEKM5yz_Lsss11-LF8TVOCG-t1TbwVI6LDR58BF3-Lmj1_dqQvlMyfmTMeVbttV3QGF23oj-RJl7QNwxGQR9byomuuRtJ4UNU');">
+</div>
+</div>
+<h2 class="font-headline-display text-headline-display text-ink-black tracking-widest mb-2">李白</h2>
+<p class="font-body-standard text-body-standard text-warm-gray mb-8 italic">诗仙 · 浪漫主义集大成者</p>
+<!-- Basic Info Bento Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-card-gap w-full">
+<div class="bg-surface-container-lowest/50 border border-outline-variant/50 rounded-lg p-card-padding flex flex-col items-center justify-center backdrop-blur-sm">
+<span class="material-symbols-outlined text-warm-gray mb-1 text-[20px]">hourglass_top</span>
+<span class="font-label-ui text-label-ui text-warm-gray mb-1">时代</span>
+<span class="font-headline-poet text-[18px] text-ink-black">唐朝</span>
+</div>
+<div class="bg-surface-container-lowest/50 border border-outline-variant/50 rounded-lg p-card-padding flex flex-col items-center justify-center backdrop-blur-sm">
+<span class="material-symbols-outlined text-warm-gray mb-1 text-[20px]">badge</span>
+<span class="font-label-ui text-label-ui text-warm-gray mb-1">字号</span>
+<span class="font-headline-poet text-[18px] text-ink-black">太白</span>
+</div>
+<div class="bg-surface-container-lowest/50 border border-outline-variant/50 rounded-lg p-card-padding flex flex-col items-center justify-center backdrop-blur-sm">
+<span class="material-symbols-outlined text-warm-gray mb-1 text-[20px]">location_on</span>
+<span class="font-label-ui text-label-ui text-warm-gray mb-1">故乡</span>
+<span class="font-headline-poet text-[18px] text-ink-black">碎叶城</span>
+</div>
+<div class="bg-surface-container-lowest/50 border border-outline-variant/50 rounded-lg p-card-padding flex flex-col items-center justify-center backdrop-blur-sm">
+<span class="material-symbols-outlined text-warm-gray mb-1 text-[20px]">auto_stories</span>
+<span class="font-label-ui text-label-ui text-warm-gray mb-1">体裁</span>
+<span class="font-headline-poet text-[18px] text-ink-black">古体诗</span>
+</div>
+</div>
+</section>
+<!-- StorylineTimeline Section -->
+<section class="mt-16">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-vermilion-red" style="font-variation-settings: 'FILL' 1;">timeline</span>
+<h3 class="font-headline-poet text-headline-poet text-ink-black">一生轨迹</h3>
+</div>
+<!-- Timeline Container -->
+<div class="relative border-l-2 border-outline-variant/40 border-dashed ml-4 py-4 space-y-12">
+<!-- Event Node -->
+<div class="relative pl-8">
+<!-- Dot -->
+<div class="absolute w-3 h-3 rounded-full bg-surface-container-lowest border-2 border-warm-gray -left-[7px] top-2"></div>
+<div class="font-label-ui text-label-ui text-warm-gray mb-1">长安元年 (701年)</div>
+<div class="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-lg p-4 shadow-sm">
+<h4 class="font-headline-poet text-[20px] text-ink-black mb-2">降生</h4>
+<p class="font-body-standard text-body-standard text-on-surface-variant">生于碎叶城，五岁时随父迁居绵州昌隆县（今四川江油）。</p>
+</div>
+</div>
+<!-- Highlighted Event Node -->
+<div class="relative pl-8">
+<!-- Highlight Dot (Vermilion Seal representation) -->
+<div class="absolute w-5 h-5 rounded-full bg-vermilion-red -left-[11px] top-1 shadow-sm flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-rice-paper"></div>
+</div>
+<div class="font-label-ui text-label-ui text-vermilion-red mb-1 font-bold">天宝三载 (744年)</div>
+<div class="bg-primary-fixed/20 border-l-4 border-vermilion-red rounded-r-lg p-4 shadow-sm backdrop-blur-sm">
+<h4 class="font-headline-poet text-[22px] text-on-primary-fixed-variant mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">star</span>
+                            ★ 奉诏入京
+                        </h4>
+<p class="font-body-standard text-body-standard text-on-primary-fixed">受唐玄宗诏令入长安，供奉翰林。在此期间结识贺知章等人，留下“谪仙人”美誉。</p>
+</div>
+</div>
+<!-- Event Node -->
+<div class="relative pl-8">
+<!-- Dot -->
+<div class="absolute w-3 h-3 rounded-full bg-surface-container-lowest border-2 border-warm-gray -left-[7px] top-2"></div>
+<div class="font-label-ui text-label-ui text-warm-gray mb-1">宝应元年 (762年)</div>
+<div class="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-lg p-4 shadow-sm">
+<h4 class="font-headline-poet text-[20px] text-ink-black mb-2">长辞</h4>
+<p class="font-body-standard text-body-standard text-on-surface-variant">病重，将手稿交予李阳冰，赋《临路歌》后绝笔于当涂。</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Action Buttons Area -->
+<div class="fixed bottom-[80px] md:bottom-8 left-0 w-full px-margin-mobile z-40">
+<div class="max-w-3xl mx-auto flex gap-4 bg-gradient-to-t from-rice-paper via-rice-paper to-transparent pt-8 pb-4">
+<button class="flex-1 border-2 border-vermilion-red text-vermilion-red bg-rice-paper/80 backdrop-blur-md rounded-lg py-3 px-4 font-headline-poet text-[18px] flex items-center justify-center gap-2 hover:bg-vermilion-red hover:text-rice-paper transition-colors duration-500">
+<span class="material-symbols-outlined">auto_stories</span>
+                共历平生
+            </button>
+<button class="flex-1 bg-vermilion-red text-rice-paper shadow-md rounded-lg py-3 px-4 font-headline-poet text-[18px] flex items-center justify-center gap-2 hover:bg-on-primary-fixed-variant transition-colors duration-500">
+<span class="material-symbols-outlined">edit</span>
+                研墨修书
+            </button>
+</div>
+</div>
+<!-- BottomNavBar from JSON (Visible on Mobile) -->
+<nav class="border-t border-outline-variant bg-rice-paper fixed bottom-0 w-full z-50 flex justify-around items-center px-margin-mobile pb-safe h-20 md:hidden shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+<!-- Item 1 -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 w-16">
+<span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 0;">map</span>
+<span class="font-label-ui text-label-ui">驿路</span>
+</button>
+<!-- Item 2 -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 w-16">
+<span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 0;">mail</span>
+<span class="font-label-ui text-label-ui">传书</span>
+</button>
+<!-- Item 3 (Active) -->
+<button class="flex flex-col items-center justify-center text-vermilion-red p-2 scale-110 transition-transform duration-700 w-16">
+<span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 1;">timeline</span>
+<span class="font-label-ui text-label-ui font-bold">溯源</span>
+</button>
+<!-- Item 4 -->
+<button class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 w-16">
+<span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label-ui text-label-ui">吾身</span>
+</button>
+</nav>
+</body></html>

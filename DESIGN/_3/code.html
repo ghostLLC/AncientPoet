@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>鸿雁 - 案台</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&amp;family=Noto+Serif+CJK+SC:wght@200..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-fixed-variant": "#881e15",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#58413e",
+                        "on-tertiary-container": "#fbfffa",
+                        "inverse-primary": "#ffb4a9",
+                        "on-tertiary-fixed-variant": "#2c4d3d",
+                        "surface-container": "#efecff",
+                        "primary": "#a73428",
+                        "on-secondary": "#ffffff",
+                        "jade-green": "#6B8E7B",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "secondary-container": "#fdd588",
+                        "secondary": "#775a19",
+                        "on-primary-fixed": "#410000",
+                        "error": "#ba1a1a",
+                        "tertiary": "#426453",
+                        "warm-gray": "#8B8178",
+                        "surface-container-highest": "#e2e0fc",
+                        "primary-fixed": "#ffdad5",
+                        "primary-container": "#c84c3d",
+                        "on-background": "#1a1a2e",
+                        "tertiary-container": "#5a7d6b",
+                        "on-secondary-container": "#775b1a",
+                        "on-error-container": "#93000a",
+                        "surface": "#fcf8ff",
+                        "outline-variant": "#dfbfba",
+                        "outline": "#8b716d",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#ffb4a9",
+                        "surface-container-lowest": "#ffffff",
+                        "ink-black": "#1A1A2E",
+                        "imperial-gold": "#C8A45C",
+                        "inverse-surface": "#2f2e43",
+                        "surface-container-low": "#f5f2ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#aacfba",
+                        "background": "#fcf8ff",
+                        "tertiary-fixed": "#c6ebd5",
+                        "surface-container-high": "#e8e5ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fcf8ff",
+                        "on-surface": "#1a1a2e",
+                        "sky-blue": "#7BA7BC",
+                        "on-tertiary-fixed": "#002114",
+                        "secondary-fixed": "#ffdea2",
+                        "on-primary-container": "#fffdff",
+                        "on-secondary-fixed": "#261900",
+                        "inverse-on-surface": "#f2efff",
+                        "surface-dim": "#dad7f3",
+                        "surface-variant": "#e2e0fc",
+                        "secondary-fixed-dim": "#e8c176",
+                        "vermilion-red": "#C84C3D",
+                        "surface-tint": "#a93629",
+                        "rice-paper": "#F5F0E8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "unit": "8px",
+                        "margin-tablet": "24px",
+                        "margin-mobile": "16px",
+                        "card-gap": "8px",
+                        "paragraph-gap": "16px",
+                        "card-padding": "16px"
+                    },
+                    fontFamily: {
+                        "body-standard": ["Literata", "serif"],
+                        "label-ui": ["Source Sans 3", "sans-serif"],
+                        "headline-poet": ["Noto Serif CJK SC", "serif"],
+                        "headline-display": ["Noto Serif CJK SC", "serif"],
+                        "body-letter": ["Literata", "serif"]
+                    },
+                    fontSize: {
+                        "body-standard": ["16px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-ui": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-poet": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-display": ["48px", { "lineHeight": "64px", "fontWeight": "700" }],
+                        "body-letter": ["18px", { "lineHeight": "32px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Subtle silk grain texture overlay */
+        .silk-texture {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+        /* Hide scrollbar for a cleaner canvas look */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-rice-paper text-ink-black font-body-standard min-h-screen relative overflow-x-hidden selection:bg-vermilion-red selection:text-rice-paper">
+<!-- Full-screen texture overlay -->
+<div class="fixed inset-0 silk-texture z-0"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-40 bg-rice-paper shadow-sm">
+<div class="flex justify-between items-center w-full px-margin-mobile h-16">
+<!-- Leading Icon (Mobile) / Logo (Web) -->
+<div class="flex items-center gap-4">
+<button class="md:hidden text-vermilion-red hover:bg-surface-container-low transition-colors duration-500 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-poet text-headline-poet text-vermilion-red hidden md:block">鸿雁</h1>
+</div>
+<!-- Mobile Title -->
+<h1 class="font-headline-poet text-headline-poet text-vermilion-red md:hidden">鸿雁</h1>
+<!-- Desktop Navigation Cluster (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-ui text-label-ui text-warm-gray hover:text-primary transition-all duration-500 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined">map</span>
+<span>驿路</span>
+</a>
+<a class="font-label-ui text-label-ui text-primary font-bold flex flex-col items-center gap-1 opacity-80 transition-opacity duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span>传书</span>
+</a>
+<a class="font-label-ui text-label-ui text-warm-gray hover:text-primary transition-all duration-500 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined">timeline</span>
+<span>溯源</span>
+</a>
+<a class="font-label-ui text-label-ui text-warm-gray hover:text-primary transition-all duration-500 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined">person</span>
+<span>吾身</span>
+</a>
+</nav>
+<!-- Trailing Icon (Quick Entry) -->
+<button aria-label="驿站快捷入口" class="text-vermilion-red hover:bg-surface-container-low transition-colors duration-500 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">history_edu</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 pt-24 pb-32 px-4 md:px-8 max-w-2xl mx-auto flex flex-col items-center">
+<!-- Page Title -->
+<div class="w-full mb-12 mt-4 pl-2">
+<h2 class="font-headline-display text-headline-display text-ink-black tracking-widest">案台</h2>
+<p class="font-body-standard text-body-standard text-warm-gray mt-2">纸短情长，见字如面。</p>
+</div>
+<!-- Desk Layout: Staggered Envelope Cards -->
+<div class="w-full flex flex-col gap-6 relative">
+<!-- Card 1: Delivered, Unread (Vermilion Seal) -->
+<article class="relative w-[95%] sm:w-full ml-auto bg-surface-container-lowest border border-outline-variant rounded-sm p-6 shadow-sm transform rotate-[1deg] hover:rotate-0 transition-transform duration-700 cursor-pointer group">
+<!-- Vermilion Red Wax Seal -->
+<div class="absolute top-4 right-4 w-8 h-8 bg-vermilion-red rounded-full flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-rice-paper text-sm" style="font-variation-settings: 'FILL' 1;">trip_origin</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="font-headline-poet text-lg text-ink-black">苏</span>
+</div>
+<div>
+<h3 class="font-headline-poet text-xl text-ink-black leading-none">苏轼</h3>
+<p class="font-label-ui text-label-ui text-warm-gray mt-1">岭南驿 · 己亥年</p>
+</div>
+</div>
+<div class="pl-13">
+<p class="font-body-letter text-body-letter text-ink-black line-clamp-2">
+                        吾弟辙：近来可好？惠州风物殊异，荔枝将熟，日啖三百颗，不辞长作岭南人。
+                    </p>
+</div>
+</article>
+<!-- Card 2: In Transit (Delayed) -->
+<article class="relative w-[92%] sm:w-[95%] mr-auto bg-surface border border-outline-variant rounded-sm p-6 transform -rotate-[2deg] hover:-rotate-1 transition-transform duration-700 cursor-pointer opacity-90">
+<div class="absolute inset-0 bg-secondary-container opacity-5 pointer-events-none"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant opacity-70">
+<span class="font-headline-poet text-lg text-ink-black">白</span>
+</div>
+<div>
+<h3 class="font-headline-poet text-xl text-on-surface-variant leading-none">李白</h3>
+<p class="font-label-ui text-label-ui text-warm-gray mt-1">发往：长安</p>
+</div>
+</div>
+<!-- Transit Indicator -->
+<div class="flex flex-col items-end gap-1">
+<span class="material-symbols-outlined text-warm-gray">schedule</span>
+<span class="font-label-ui text-label-ui text-warm-gray">预计三日后到达</span>
+</div>
+</div>
+<div class="pl-13">
+<div class="h-6 w-3/4 bg-surface-variant rounded animate-pulse opacity-40"></div>
+<div class="h-6 w-1/2 bg-surface-variant rounded animate-pulse opacity-40 mt-2"></div>
+</div>
+</article>
+<!-- Card 3: Delivered, Read -->
+<article class="relative w-[96%] sm:w-full mx-auto bg-surface-container-lowest border border-outline-variant rounded-sm p-6 shadow-sm transform rotate-[-0.5deg] hover:rotate-0 transition-transform duration-700 cursor-pointer opacity-80">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="font-headline-poet text-lg text-ink-black">甫</span>
+</div>
+<div>
+<h3 class="font-headline-poet text-xl text-on-surface-variant leading-none">杜甫</h3>
+<p class="font-label-ui text-label-ui text-warm-gray mt-1">成都草堂 · 半月前</p>
+</div>
+</div>
+<div class="pl-13">
+<p class="font-body-letter text-body-letter text-on-surface-variant line-clamp-2">
+                        八月秋高风怒号，卷我屋上三重茅。近来成都多雨，茅屋破损，甚是凄凉，不知君处光景几何？
+                    </p>
+</div>
+</article>
+</div>
+</main>
+<!-- Floating Action Button (New Letter) -->
+<button aria-label="撰写新信件" class="fixed right-6 bottom-28 md:bottom-12 w-14 h-14 bg-imperial-gold text-ink-black rounded-full shadow-lg flex items-center justify-center z-40 hover:scale-105 transition-transform duration-500">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+</button>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-margin-mobile pb-safe bg-rice-paper h-20 border-t border-outline-variant">
+<!-- Tab 1: 驿路 -->
+<a class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-500">map</span>
+<span class="font-label-ui text-label-ui mt-1">驿路</span>
+</a>
+<!-- Tab 2: 传书 (Active Tab -> matches Inbox/Desk intent) -->
+<a class="flex flex-col items-center justify-center text-vermilion-red p-2 scale-110 transition-transform duration-700 opacity-80" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="font-label-ui text-label-ui mt-1 font-bold">传书</span>
+</a>
+<!-- Tab 3: 溯源 -->
+<a class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-500">timeline</span>
+<span class="font-label-ui text-label-ui mt-1">溯源</span>
+</a>
+<!-- Tab 4: 吾身 -->
+<a class="flex flex-col items-center justify-center text-warm-gray p-2 hover:text-primary transition-all duration-500 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-500">person</span>
+<span class="font-label-ui text-label-ui mt-1">吾身</span>
+</a>
+</nav>
+</body></html>

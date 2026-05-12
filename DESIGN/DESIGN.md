@@ -1,3 +1,102 @@
+---
+name: AncientPoet (鸿雁) Design System
+colors:
+  surface: '#fcf8ff'
+  surface-dim: '#dad7f3'
+  surface-bright: '#fcf8ff'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#f5f2ff'
+  surface-container: '#efecff'
+  surface-container-high: '#e8e5ff'
+  surface-container-highest: '#e2e0fc'
+  on-surface: '#1a1a2e'
+  on-surface-variant: '#58413e'
+  inverse-surface: '#2f2e43'
+  inverse-on-surface: '#f2efff'
+  outline: '#8b716d'
+  outline-variant: '#dfbfba'
+  surface-tint: '#a93629'
+  primary: '#a73428'
+  on-primary: '#ffffff'
+  primary-container: '#c84c3d'
+  on-primary-container: '#fffdff'
+  inverse-primary: '#ffb4a9'
+  secondary: '#775a19'
+  on-secondary: '#ffffff'
+  secondary-container: '#fdd588'
+  on-secondary-container: '#775b1a'
+  tertiary: '#426453'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#5a7d6b'
+  on-tertiary-container: '#fbfffa'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#ffdad5'
+  primary-fixed-dim: '#ffb4a9'
+  on-primary-fixed: '#410000'
+  on-primary-fixed-variant: '#881e15'
+  secondary-fixed: '#ffdea2'
+  secondary-fixed-dim: '#e8c176'
+  on-secondary-fixed: '#261900'
+  on-secondary-fixed-variant: '#5c4200'
+  tertiary-fixed: '#c6ebd5'
+  tertiary-fixed-dim: '#aacfba'
+  on-tertiary-fixed: '#002114'
+  on-tertiary-fixed-variant: '#2c4d3d'
+  background: '#fcf8ff'
+  on-background: '#1a1a2e'
+  surface-variant: '#e2e0fc'
+  rice-paper: '#F5F0E8'
+  ink-black: '#1A1A2E'
+  vermilion-red: '#C84C3D'
+  imperial-gold: '#C8A45C'
+  jade-green: '#6B8E7B'
+  sky-blue: '#7BA7BC'
+  warm-gray: '#8B8178'
+typography:
+  headline-display:
+    fontFamily: Noto Serif CJK SC
+    fontSize: 48px
+    fontWeight: '700'
+    lineHeight: 64px
+  headline-poet:
+    fontFamily: Noto Serif CJK SC
+    fontSize: 28px
+    fontWeight: '600'
+    lineHeight: 36px
+  body-letter:
+    fontFamily: Literata
+    fontSize: 18px
+    fontWeight: '400'
+    lineHeight: 32px
+  body-standard:
+    fontFamily: Literata
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 28px
+  label-ui:
+    fontFamily: Source Sans Three
+    fontSize: 14px
+    fontWeight: '500'
+    lineHeight: 20px
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  unit: 8px
+  margin-mobile: 16px
+  margin-tablet: 24px
+  paragraph-gap: 16px
+  card-gap: 8px
+  card-padding: 16px
+---
+
 # DESIGN.md — AncientPoet（鸿雁）
 
 > 版本: v1.0 | 日期: 2026-05-12 | 对应 Phase 1-2
