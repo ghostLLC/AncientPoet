@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AncientPoet（鸿雁）is a cross-platform "slow communication" app where users exchange letters with AI-powered ancient Chinese poets. Messages incur realistic delays (hours to days) based on geographic distance on dynasty-era maps. The product goal is to encourage deeper, more thoughtful writing by slowing down the pace of conversation.
 
-**Current state**: Phase 1 + Phase 2 complete (backend + frontend). 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, and drawing canvas all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. Not yet compiled — requires JDK 17+. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
+**Current state**: Phase 1 + Phase 2 + Phase 3 complete. 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, drawing canvas, and community (文苑) all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. Not yet compiled — requires JDK 17+. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
 
 ## Tech Stack
 
@@ -59,14 +59,15 @@ cd server && ./gradlew run                 # Ktor on :8080
 
 **Server**: Ktor pipeline — plugins → routes → services → repositories → Exposed:
 - `plugin/` — Authentication (JWT via auth0-jwt), CORS, kotlinx.serialization, rate limiting, status pages
-- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 10 route files: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem, Upload. JWT principal accessed via safe-null pattern: `call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(...)`
+- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 11 route files: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem, Upload, Community. JWT principal accessed via safe-null pattern: `call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(...)`
 - `service/` — business logic. Key services:
   - `MessageService.sendMessage()` — store user msg → calc delay → launch AI reply in background coroutine → schedule Redis delivery. Accepts StorylineService and MovementService for Phase 2 delay wiring.
   - `StorylineService` — manages storyline progression: start, advance year, jump to year, get current event
   - `MovementService` — user movement with travel time calculation (50 km/day), auto-arrival detection
   - `DelayCalculationService` — Haversine formula with full multiplier chain: base delay × settled (×0.8) × storyline event (×1.5 for war/exile)
-- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks
-- `ai/` — DeepSeekClient (OpenAI-compatible `/v1/chat/completions` with 30s timeout), PromptBuilder (Chinese system prompt), ContextManager (summary + 8 recent rounds), TranslationService (temperature=0.3)
+- `CommunityService` — posts CRUD, comments, likes toggle, repost, favorites, user profiles
+	- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks. 5 repositories: User, Poet, Conversation, Message, Community.
+- `ai/` — DeepSeekClient (OpenAI-compatible chat + vision model, 30s timeout), PromptBuilder (Chinese system prompt + painting appreciation), ContextManager (summary + 8 recent rounds), TranslationService (temperature=0.3)
 - `scheduler/` — MessageDeliveryScheduler (Redis sorted set `msg:delivery:schedule`, 1-min polling with SLF4J logging)
 - `di/ServerModule.kt` — Koin module registering all components as singletons
 
@@ -136,8 +137,8 @@ These features are structurally implemented but need third-party credentials to 
 
 ### SQLDelight Persistent Cache
 - **File**: `shared/.../data/local/LocalDataSource.kt` (`InMemoryLocalDataSource` fallback)
-- **Needed**: Platform-specific SQLDelight driver wiring (`AndroidSqliteDriver` / `JdbcSqliteDriver`)
-- **Current behavior**: Cache is in-memory only, lost on app restart. `Poet.sq` / `Message.sq` schemas defined but not connected to drivers.
+- **Needed**: Platform-specific SQLDelight driver wiring (`AndroidSqliteDriver` / `JdbcSqliteDriver`) for persistence across restarts
+- **Current behavior**: In-memory cache works within a session; `Poet.sq` / `Message.sq` schemas defined. `LocalDataSource` interface ready for driver swap. Also provides API-level cache in shared module for offline resilience.
 
 ### AI-Generated Poet Portraits
 - **Files**: All poet JSONs in `data/poets/` + `PoetAvatar` component uses initials
@@ -157,4 +158,17 @@ All Phase 2 features implemented (backend + frontend):
 | Drawing/painting | Vision API wiring | DrawingCanvas dialog |
 | Delay formula | Settled + event multipliers | Factor breakdown in UI |
 
-**Phase 3 (planned)**: Community features (文苑), user profiles, favorites, poem sharing as scroll paintings.
+## Phase 3: Complete
+
+Community features (文苑) implemented:
+
+| Feature | Backend | Frontend |
+|---------|---------|----------|
+| Post feed | CommunityRoute GET /community/posts | CommunityScreen with post cards |
+| Create post | CommunityRoute POST /community/posts | — (API ready) |
+| Like/unlike | CommunityRoute POST /posts/{id}/like | Heart toggle in feed |
+| Comments | CommunityRoute GET+POST /posts/{id}/comments | PostDetailScreen with comment input |
+| Repost | CommunityRoute POST /posts/{id}/repost | — (API ready) |
+| Favorites | CommunityRoute POST+GET /user/favorites | — (API ready) |
+| Profile | CommunityRoute GET /user/profile/{id} | ProfileScreen with stats |
+| Tables | community_posts, comments, likes, favorites (pre-existing) | — |

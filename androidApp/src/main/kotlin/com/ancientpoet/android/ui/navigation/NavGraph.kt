@@ -12,6 +12,9 @@ import com.ancientpoet.android.ui.screen.poet.PoetDetailScreen
 import com.ancientpoet.android.ui.screen.poet.PoetListScreen
 import com.ancientpoet.android.ui.screen.poetry.PoetryDetailScreen
 import com.ancientpoet.android.ui.screen.poetry.PoetryListScreen
+import com.ancientpoet.android.ui.screen.community.CommunityScreen
+import com.ancientpoet.android.ui.screen.community.PostDetailScreen
+import com.ancientpoet.android.ui.screen.community.ProfileScreen
 import com.ancientpoet.android.ui.screen.settings.SettingsScreen
 
 @Composable
@@ -67,6 +70,18 @@ fun NavGraph() {
         composable("poem/{poemId}") { backStackEntry ->
             val poemId = backStackEntry.arguments?.getString("poemId")?.toLongOrNull() ?: return@composable
             PoetryDetailScreen(poemId = poemId, onBack = { navController.popBackStack() })
+        }
+        // Community routes
+        composable("community") {
+            CommunityScreen(onPostClick = { postId -> navController.navigate("post/$postId") }, onBack = { navController.popBackStack() }, onProfileClick = { uid -> navController.navigate("profile/$uid") })
+        }
+        composable("post/{postId}") { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId")?.toLongOrNull() ?: return@composable
+            PostDetailScreen(postId = postId, onBack = { navController.popBackStack() })
+        }
+        composable("profile/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")?.toLongOrNull() ?: return@composable
+            ProfileScreen(userId = userId, onBack = { navController.popBackStack() })
         }
     }
 }

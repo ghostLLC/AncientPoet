@@ -10,6 +10,7 @@ import com.ancientpoet.server.plugin.configureRateLimit
 import com.ancientpoet.server.plugin.configureSerialization
 import com.ancientpoet.server.plugin.configureStatusPages
 import com.ancientpoet.server.route.authRoute
+import com.ancientpoet.server.route.communityRoute
 import com.ancientpoet.server.route.conversationRoute
 import com.ancientpoet.server.route.mapRoute
 import com.ancientpoet.server.route.messageRoute
@@ -63,6 +64,7 @@ fun Application.module() {
             mapRoute()
             poemRoute()
             uploadRoute()
+            communityRoute()
         }
     }
 
