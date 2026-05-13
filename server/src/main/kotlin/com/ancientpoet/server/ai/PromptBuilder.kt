@@ -4,7 +4,7 @@ import com.ancientpoet.server.model.domain.Poet
 import com.ancientpoet.server.model.domain.PoetLifeEvent
 
 object PromptBuilder {
-    fun buildSystemPrompt(poet: Poet, currentYear: Int, currentLocation: String, lifeEvent: PoetLifeEvent? = null): String {
+    fun buildSystemPrompt(poet: Poet, currentYear: Int, currentLocation: String, lifeEvent: PoetLifeEvent? = null, hasImage: Boolean = false): String {
         return """
 你现在扮演${poet.name}（字${poet.courtesyName ?: ""}，号${poet.artName ?: ""}），${poet.dynastyName ?: ""}诗人。
 

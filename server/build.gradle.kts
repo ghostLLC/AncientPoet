@@ -45,6 +45,9 @@ dependencies {
     // Redis
     implementation(libs.jedis)
 
+    // MinIO
+    implementation("io.minio:minio:8.5.10")
+
     // Koin DI
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)

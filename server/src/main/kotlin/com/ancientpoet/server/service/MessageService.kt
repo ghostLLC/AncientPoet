@@ -89,19 +89,27 @@ class MessageService(
         // Generate AI reply in background
         scope.launch {
             try {
-                val systemPrompt = PromptBuilder.buildSystemPrompt(poet, year, poetLocationName)
+                val systemPrompt = PromptBuilder.buildSystemPrompt(poet, year, poetLocationName, null, contentImageUrl != null)
                 val summary = messageRepo.getLatestSummary(conversationId)
                 val recentMessages = messageRepo.getRecentDelivered(conversationId, 16, null)
 
                 val messages = contextManager.buildMessages(
                     conversationId = conversationId,
                     systemPrompt = systemPrompt,
-                    newUserMessage = contentText ?: "",
+                    newUserMessage = contentText ?: if (contentImageUrl != null) "（友人随信附上一幅画作）" else "",
                     summary = summary,
                     recentMessages = recentMessages,
                 )
 
-                val poetReply = deepSeekClient.chatCompletion(messages)
+                val poetReply = if (contentImageUrl != null) {
+                    deepSeekClient.chatCompletionWithImage(
+                        textContent = contentText ?: "请品评这幅画作",
+                        imageUrl = contentImageUrl,
+                        messages = messages,
+                    )
+                } else {
+                    deepSeekClient.chatCompletion(messages)
+                }
                 val translation = translationService.translateToVernacular(poetReply)
 
                 messageRepo.create(

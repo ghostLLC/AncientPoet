@@ -7,12 +7,18 @@ import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
+import io.minio.MinioClient
+import io.minio.PutObjectArgs
 import org.koin.ktor.ext.inject
-import java.io.File
 import java.util.UUID
 
 fun Route.uploadRoute() {
     val appConfig: AppConfig by inject()
+
+    val minioClient = MinioClient.builder()
+        .endpoint(appConfig.minioEndpoint)
+        .credentials(appConfig.minioAccessKey, appConfig.minioSecretKey)
+        .build()
 
     authenticate("auth-jwt") {
         post("/upload/image") {
@@ -23,15 +29,36 @@ fun Route.uploadRoute() {
                 if (part is io.ktor.server.request.PartData.FileItem) {
                     val ext = part.originalFileName?.substringAfterLast('.', "jpg") ?: "jpg"
                     val filename = "${UUID.randomUUID()}.$ext"
-                    val uploadDir = File("uploads")
-                    uploadDir.mkdirs()
-                    val file = File(uploadDir, filename)
-                    part.streamProvider().use { input ->
-                        file.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
+                    val contentType = when (ext) {
+                        "png" -> "image/png"
+                        "gif" -> "image/gif"
+                        "webp" -> "image/webp"
+                        else -> "image/jpeg"
                     }
-                    url = "/static/$filename"
+
+                    val bucketName = appConfig.minioBucket
+                    // Ensure bucket exists
+                    val found = minioClient.bucketExists(
+                        io.minio.BucketExistsArgs.builder().bucket(bucketName).build()
+                    )
+                    if (!found) {
+                        minioClient.makeBucket(
+                            io.minio.MakeBucketArgs.builder().bucket(bucketName).build()
+                        )
+                    }
+
+                    part.streamProvider().use { input ->
+                        minioClient.putObject(
+                            PutObjectArgs.builder()
+                                .bucket(bucketName)
+                                .`object`(filename)
+                                .stream(input, -1, 10485760) // 10MB max
+                                .contentType(contentType)
+                                .build()
+                        )
+                    }
+
+                    url = "${appConfig.minioEndpoint}/$bucketName/$filename"
                 }
                 part.dispose()
             }

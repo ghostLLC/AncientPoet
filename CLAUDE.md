@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AncientPoet（鸿雁）is a cross-platform "slow communication" app where users exchange letters with AI-powered ancient Chinese poets. Messages incur realistic delays (hours to days) based on geographic distance on dynasty-era maps. The product goal is to encourage deeper, more thoughtful writing by slowing down the pace of conversation.
 
-**Current state**: Phase 1 complete, Phase 2 backend complete. 15 poets across 5 dynasties. Storyline mode, user movement, and poetry search are implemented server-side. Frontend for Phase 2 features (storyline UI, map interaction, drawing, poetry screens) is pending. Not yet compiled — requires JDK 17+. See `ARCHITECTURE.md` for the full phase roadmap.
+**Current state**: Phase 1 + Phase 2 complete (backend + frontend). 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, and drawing canvas all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. Not yet compiled — requires JDK 17+. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
 
 ## Tech Stack
 
@@ -49,6 +49,13 @@ cd server && ./gradlew run                 # Ktor on :8080
 - `ui/` — Compose screens + ViewModels (each screen has a `*Screen.kt` + `*ViewModel.kt` pair)
 - `domain/` — use cases, domain models, repository interfaces
 - `data/` — repository implementations wrapping Ktor Client + SQLDelight cache
+
+**Design system** (`DESIGN/` folder):
+- `DESIGN/DESIGN.md` — design token spec (colors, typography, spacing, rounded corners) with YAML frontmatter
+- `DESIGN/high_fidelity_design.md` — design philosophy brief for UI prototyping
+- `DESIGN/_1/` through `DESIGN/_8/` — HTML/CSS prototypes + PNG screenshots for all 8 screens
+- Theme implementation in `androidApp/.../ui/theme/Theme.kt` (39 Material 3 color roles + 7 Chinese pigment semantic colors) and `Type.kt` (3-level typography: Serif for headings/letters, Sans for UI labels)
+- Key visual patterns: seal-style buttons (2dp radius, red border, no fill), letter-lines input area, TranslationSeal ("译" stamp component), poem text at 18sp/36sp line-height/0.5sp letter-spacing
 
 **Server**: Ktor pipeline — plugins → routes → services → repositories → Exposed:
 - `plugin/` — Authentication (JWT via auth0-jwt), CORS, kotlinx.serialization, rate limiting, status pages
@@ -111,14 +118,43 @@ After 40 messages (20 rounds), `ContextManager.shouldSummarize()` triggers. Olde
 - All `printStackTrace()` replaced with SLF4J logging (`logger.error(...)`)
 - `StatusPages` catches `Exception` not `Throwable` (allows JVM Errors to propagate)
 
-## Phase 2 Status: Backend Done, Frontend Pending
+## Known Gaps (Requires External Credentials/Setup)
 
-| Done (backend) | Pending (frontend) |
-|---|---|
-| StorylineService + StorylineRoute | StorylineTimeline component, year picker UI |
-| MovementService + MovementRoute | Interactive map: tappable cities, trajectory, animation |
-| 15 poets across 5 dynasties + V3 seed | — |
-| PoemRoute (/poems, /poems/search) | PoetryListScreen, PoetryDetailScreen |
-| Delay formula fully wired | — |
-| — | DrawingCanvas, image upload UI |
-| — | Vision API painting appreciation |
+These features are structurally implemented but need third-party credentials to activate:
+
+### FCM Push Notifications
+- **File**: `server/.../push/FCMClient.kt` (stub) + `androidApp/.../service/FCMService.kt` (client)
+- **Needed**: Firebase project with `google-services.json` placed in `androidApp/`
+- **Server side**: Firebase Admin SDK service account JSON, set `FCM_CREDENTIALS_PATH` env var
+- **Current behavior**: `FCMClient.send()` is a no-op; push delivery silently skipped
+
+### SMS Verification
+- **File**: `server/.../service/AuthService.kt`
+- **Needed**: Aliyun SMS (`SMS_PROVIDER=aliyun`) or Tencent Cloud SMS credentials
+- **Env vars**: `SMS_ACCESS_KEY`, `SMS_ACCESS_SECRET`, `SMS_SIGN_NAME`, `SMS_TEMPLATE_CODE`
+- **Current behavior**: Codes stored in-memory; dev bypass `123456` works when `KTOR_DEVELOPMENT=true`
+
+### SQLDelight Persistent Cache
+- **File**: `shared/.../data/local/LocalDataSource.kt` (`InMemoryLocalDataSource` fallback)
+- **Needed**: Platform-specific SQLDelight driver wiring (`AndroidSqliteDriver` / `JdbcSqliteDriver`)
+- **Current behavior**: Cache is in-memory only, lost on app restart. `Poet.sq` / `Message.sq` schemas defined but not connected to drivers.
+
+### AI-Generated Poet Portraits
+- **Files**: All poet JSONs in `data/poets/` + `PoetAvatar` component uses initials
+- **Needed**: 15 portrait images (one per poet), path stored in `portrait_url` field
+- **Current behavior**: Golden square with first character of poet's name
+
+## Phase 2: Complete
+
+All Phase 2 features implemented (backend + frontend):
+
+| Feature | Backend | Frontend |
+|---------|---------|----------|
+| Storyline mode | StorylineService + Route | StorylineTimeline, year picker, banner |
+| User movement | MovementService + Route | Interactive map, city selection, animation |
+| 15 poets, 5 dynasties | V3 seed migration | Poet list/detail with serif typography |
+| Poetry library | PoemRoute (/poems, /poems/search) | PoetryListScreen, PoetryDetailScreen |
+| Drawing/painting | Vision API wiring | DrawingCanvas dialog |
+| Delay formula | Settled + event multipliers | Factor breakdown in UI |
+
+**Phase 3 (planned)**: Community features (文苑), user profiles, favorites, poem sharing as scroll paintings.
