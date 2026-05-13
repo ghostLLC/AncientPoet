@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AncientPoet（鸿雁）is a cross-platform "slow communication" app where users exchange letters with AI-powered ancient Chinese poets. Messages incur realistic delays (hours to days) based on geographic distance on dynasty-era maps. The product goal is to encourage deeper, more thoughtful writing by slowing down the pace of conversation.
 
-**Current state**: Phase 1 + Phase 2 complete (compiled + tested). 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, and drawing canvas all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. Phase 3 (community) backend was built but temporarily removed during Ktor 3.x / Exposed 0.57 migration — needs re-integration. All 4 Gradle modules compile on JDK 17 + Android SDK 34. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
+**Current state**: Phase 1 + Phase 2 + Phase 3 complete. 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, drawing canvas, community (文苑), and JPush notifications all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. All 4 Gradle modules compile on JDK 17 + Android SDK 34. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
 
 ## Tech Stack
 
@@ -19,7 +19,7 @@ AncientPoet（鸿雁）is a cross-platform "slow communication" app where users 
 | Cache/Queue | Redis 7.x (sorted-set delivery scheduling) |
 | Object Storage | MinIO (S3-compatible, self-hosted) |
 | AI | DeepSeek V4-Flash (OpenAI-compatible API) |
-| Push | Firebase Cloud Messaging |
+| Push | 极光推送 (JPush) REST API v3 |
 | DI | Koin 4.x |
 | Local DB (client) | SQLDelight 2.x |
 | Migrations | Flyway (V1 schema, V2 seed, V3 Phase 2 data) |
@@ -68,14 +68,14 @@ cd deploy && docker-compose up -d          # Start PG + Redis + MinIO
 
 **Server**: Ktor pipeline — plugins → routes → services → repositories → Exposed:
 - `plugin/` — Authentication (JWT via auth0-jwt), CORS, kotlinx.serialization, rate limiting, status pages
-- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 9 active routes: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem. Inside `authenticate("auth-jwt")` blocks, JWT principal accessed via `!!` (safe since Ktor rejects unauthenticated requests before reaching the handler). Community and Upload routes temporarily removed pending Ktor 3.x API migration.
+- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 11 routes: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem, Upload, Community. Inside `authenticate("auth-jwt")`, JWT principal accessed via `!!` (safe since Ktor 3.x rejects unauthenticated requests). UploadRoute uses `receiveStream().readBytes()` to bypass Ktor 3.x multipart API.
 - `service/` — business logic. Key services:
   - `MessageService.sendMessage()` — store user msg → calc delay → launch AI reply in background coroutine → schedule Redis delivery. Accepts StorylineService and MovementService for Phase 2 delay wiring.
   - `StorylineService` — manages storyline progression: start, advance year, jump to year, get current event
   - `MovementService` — user movement with travel time calculation (50 km/day), auto-arrival detection
   - `DelayCalculationService` — Haversine formula with full multiplier chain: base delay × settled (×0.8) × storyline event (×1.5 for war/exile)
-- `CommunityService` — posts CRUD, comments, likes, repost, favorites, profiles (temporarily removed, pending re-integration)
-	- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks. 4 active repositories: User, Poet, Conversation, Message. Uses `insert { it[col] = val }` pattern (Exposed 0.57), ResultRow access without `.value` on plain Long columns.
+- `CommunityService` — posts CRUD, comments, likes, repost, favorites, profiles (restored and compiled)
+	- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks. 5 repositories (Community restored): User, Poet, Conversation, Message. Uses `insert { it[col] = val }` pattern (Exposed 0.57), ResultRow access without `.value` on plain Long columns.
 - `ai/` — DeepSeekClient (OpenAI-compatible chat + vision model, 30s timeout), PromptBuilder (Chinese system prompt + painting appreciation), ContextManager (summary + 8 recent rounds), TranslationService (temperature=0.3)
 - `scheduler/` — MessageDeliveryScheduler (Redis sorted set `msg:delivery:schedule`, 1-min polling with SLF4J logging)
 - `di/ServerModule.kt` — Koin module registering all components as singletons
@@ -116,6 +116,10 @@ After 40 messages (20 rounds), `ContextManager.shouldSummarize()` triggers. Olde
 
 `MovementService` handles map relocation: user selects city → `POST /user/location/{dynastyId}/move` → travel time calculated at 50 km/day (min 1 hour) → status set to `moving` with arrival timestamp → on next status check, auto-completes if arrival time passed → settled status activates ×0.8 delay bonus.
 
+### Push Notifications (JPush)
+
+`JPushClient` sends push via JPush REST API v3 (`POST api.jpush.cn/v3/push`, Basic Auth with AppKey:MasterSecret). `PushNotificationService.sendLetterArrival()` pushes by `user_<id>` alias with title "一封来信" and location-based body. Android client registers via JPush SDK (commented, pending JPush account).
+
 ## Key Conventions
 
 - Base package: `com.ancientpoet`
@@ -135,11 +139,12 @@ After 40 messages (20 rounds), `ContextManager.shouldSummarize()` triggers. Olde
 
 These features are structurally implemented but need third-party credentials to activate:
 
-### FCM Push Notifications
-- **File**: `server/.../push/FCMClient.kt` (stub) + `androidApp/.../service/FCMService.kt` (client)
-- **Needed**: Firebase project with `google-services.json` placed in `androidApp/`
-- **Server side**: Firebase Admin SDK service account JSON, set `FCM_CREDENTIALS_PATH` env var
-- **Current behavior**: `FCMClient.send()` is a no-op; push delivery silently skipped
+### JPush Notifications (极光推送)
+- **File**: `server/.../push/JPushClient.kt` (REST API v3 client) + `PushNotificationService.kt` (sends by user alias)
+- **Needed**: JPush account at jiguang.cn → get AppKey + MasterSecret
+- **Env vars**: `JPUSH_APP_KEY`, `JPUSH_MASTER_SECRET`
+- **Android side**: Uncomment JPush SDK in `build.gradle.kts` + `JPushInterface.init()` in `AncientPoetApp.kt` + set `manifestPlaceholders["JPUSH_APPKEY"]`
+- **Current behavior**: Server push calls are no-op when credentials are empty
 
 ### SMS Verification
 - **File**: `server/.../service/AuthService.kt`
@@ -170,9 +175,9 @@ All Phase 2 features implemented (backend + frontend):
 | Drawing/painting | Vision API wiring | DrawingCanvas dialog |
 | Delay formula | Settled + event multipliers | Factor breakdown in UI |
 
-## Phase 3: Backend implemented (frontend partially, temporarily removed)
+## Phase 3: Complete
 
-Community features built but removed during compile migration — needs Ktor 3.x API re-integration:
+Community features (文苑) fully restored and compiled:
 
 | Feature | Backend | Frontend |
 |---------|---------|----------|
