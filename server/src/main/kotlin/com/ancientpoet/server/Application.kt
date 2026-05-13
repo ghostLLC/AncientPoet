@@ -10,6 +10,7 @@ import com.ancientpoet.server.plugin.configureRateLimit
 import com.ancientpoet.server.plugin.configureSerialization
 import com.ancientpoet.server.plugin.configureStatusPages
 import com.ancientpoet.server.route.authRoute
+import com.ancientpoet.server.route.communityRoute
 import com.ancientpoet.server.route.conversationRoute
 import com.ancientpoet.server.route.mapRoute
 import com.ancientpoet.server.route.messageRoute
@@ -17,6 +18,7 @@ import com.ancientpoet.server.route.movementRoute
 import com.ancientpoet.server.route.poemRoute
 import com.ancientpoet.server.route.poetRoute
 import com.ancientpoet.server.route.storylineRoute
+import com.ancientpoet.server.route.uploadRoute
 import com.ancientpoet.server.route.userRoute
 import com.ancientpoet.server.scheduler.MessageDeliveryScheduler
 import io.ktor.server.application.Application
@@ -62,6 +64,8 @@ fun Application.module(appConfig: AppConfig) {
             movementRoute()
             mapRoute()
             poemRoute()
+            uploadRoute()
+            communityRoute()
         }
     }
 

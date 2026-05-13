@@ -6,6 +6,7 @@ import com.ancientpoet.server.ai.TranslationService
 import com.ancientpoet.server.config.AppConfig
 import com.ancientpoet.server.push.FCMClient
 import com.ancientpoet.server.push.PushNotificationService
+import com.ancientpoet.server.repository.CommunityRepository
 import com.ancientpoet.server.repository.ConversationRepository
 import com.ancientpoet.server.repository.MessageRepository
 import com.ancientpoet.server.repository.PoetRepository
@@ -43,5 +44,7 @@ object ServerModule {
         single { MovementService(get()) }
         single { ConversationService(get(), get(), get()) }
         single { MessageService(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+        single { CommunityRepository() }
+        single { CommunityService(get(), get()) }
     }
 }
