@@ -7,36 +7,31 @@ import com.ancientpoet.server.model.domain.User
 import com.ancientpoet.server.model.domain.UserLocation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import java.time.Instant
 
 class UserRepository {
     suspend fun findByPhone(phone: String): User? = withContext(Dispatchers.IO) {
         transaction {
-            UsersTable.select { UsersTable.phone eq phone }
-                .singleOrNull()
-                ?.toUser()
+            UsersTable.selectAll().where { UsersTable.phone eq phone }.singleOrNull()?.toUser()
         }
     }
 
     suspend fun findById(id: Long): User? = withContext(Dispatchers.IO) {
         transaction {
-            UsersTable.select { UsersTable.id eq id }
-                .singleOrNull()
-                ?.toUser()
+            UsersTable.selectAll().where { UsersTable.id eq id }.singleOrNull()?.toUser()
         }
     }
 
     suspend fun create(phone: String): User = withContext(Dispatchers.IO) {
         transaction {
-            val id = UsersTable.insertAndGetId {
+            val result = UsersTable.insert {
                 it[UsersTable.phone] = phone
             }
-            User(id = id.value, phone = phone, nickname = null, avatarUrl = null, bio = null)
+            val id = result[UsersTable.id]
+            User(id = id, phone = phone, nickname = null, avatarUrl = null, bio = null)
         }
     }
 
@@ -54,28 +49,25 @@ class UserRepository {
 
     suspend fun getLocation(userId: Long, dynastyId: String): UserLocation? = withContext(Dispatchers.IO) {
         transaction {
-            UserLocationsTable.select {
-                (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId)
-            }.singleOrNull()?.let { row ->
-                UserLocation(
-                    id = row[UserLocationsTable.id].value,
-                    userId = row[UserLocationsTable.userId].value,
-                    dynastyId = row[UserLocationsTable.dynastyId],
-                    locationName = row[UserLocationsTable.locationName],
-                    lat = row[UserLocationsTable.lat],
-                    lng = row[UserLocationsTable.lng],
-                    status = LocationStatus.fromString(row[UserLocationsTable.status]),
-                )
-            }
+            UserLocationsTable.selectAll().where { (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId) }
+                .singleOrNull()?.let { row ->
+                    UserLocation(
+                        id = row[UserLocationsTable.id],
+                        userId = row[UserLocationsTable.userId],
+                        dynastyId = row[UserLocationsTable.dynastyId],
+                        locationName = row[UserLocationsTable.locationName],
+                        lat = row[UserLocationsTable.lat],
+                        lng = row[UserLocationsTable.lng],
+                        status = LocationStatus.fromString(row[UserLocationsTable.status]),
+                    )
+                }
         }
     }
 
     suspend fun upsertLocation(userId: Long, dynastyId: String, locationName: String, lat: Double, lng: Double, status: String) {
         withContext(Dispatchers.IO) {
             transaction {
-                val existing = UserLocationsTable.select {
-                    (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId)
-                }.singleOrNull()
+                val existing = UserLocationsTable.selectAll().where { (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId) }.singleOrNull()
                 if (existing != null) {
                     UserLocationsTable.update({ UserLocationsTable.id eq existing[UserLocationsTable.id] }) {
                         it[UserLocationsTable.locationName] = locationName
@@ -84,7 +76,7 @@ class UserRepository {
                         it[UserLocationsTable.status] = status
                     }
                 } else {
-                    UserLocationsTable.insertAndGetId {
+                    UserLocationsTable.insert {
                         it[UserLocationsTable.userId] = userId
                         it[UserLocationsTable.dynastyId] = dynastyId
                         it[UserLocationsTable.locationName] = locationName
@@ -97,28 +89,23 @@ class UserRepository {
         }
     }
 
-    suspend fun setMoving(userId: Long, dynastyId: String, toName: String, toLat: Double, toLng: Double, startTime: java.time.Instant, arrivalTime: java.time.Instant) {
+    suspend fun setMoving(userId: Long, dynastyId: String, toName: String, toLat: Double, toLng: Double, startTime: Instant, arrivalTime: Instant) {
         withContext(Dispatchers.IO) {
             transaction {
-                UserLocationsTable.update({
-                    (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId)
-                }) {
+                UserLocationsTable.update({ (UserLocationsTable.userId eq userId) and (UserLocationsTable.dynastyId eq dynastyId) }) {
                     it[status] = "moving"
                     it[movingToName] = toName
                     it[movingToLat] = toLat
                     it[movingToLng] = toLng
-                    it[movingStartTime] = startTime
-                    it[movingArrivalTime] = arrivalTime
+                    it[movingStartTime] = startTime.toString()
+                    it[movingArrivalTime] = arrivalTime.toString()
                 }
             }
         }
     }
 
     private fun org.jetbrains.exposed.sql.ResultRow.toUser() = User(
-        id = this[UsersTable.id].value,
-        phone = this[UsersTable.phone],
-        nickname = this[UsersTable.nickname],
-        avatarUrl = this[UsersTable.avatarUrl],
-        bio = this[UsersTable.bio],
+        id = this[UsersTable.id], phone = this[UsersTable.phone],
+        nickname = this[UsersTable.nickname], avatarUrl = this[UsersTable.avatarUrl], bio = this[UsersTable.bio],
     )
 }

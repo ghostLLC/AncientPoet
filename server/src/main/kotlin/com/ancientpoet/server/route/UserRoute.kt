@@ -18,7 +18,7 @@ fun Route.userRoute() {
 
     authenticate("auth-jwt") {
         get("/user/profile") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val user = userService.getProfile(userId)
             if (user != null) {
                 call.respond(HttpStatusCode.OK, UserProfileResponse(
@@ -31,14 +31,14 @@ fun Route.userRoute() {
         }
 
         put("/user/profile") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val request = call.receive<UpdateProfileRequest>()
             userService.updateProfile(userId, request.nickname, request.avatarUrl, request.bio)
             call.respond(HttpStatusCode.OK, mapOf("message" to "更新成功"))
         }
 
         get("/user/location/{dynastyId}") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val dynastyId = call.parameters["dynastyId"]!!
             val location = userService.getLocation(userId, dynastyId)
             if (location != null) {
@@ -54,7 +54,7 @@ fun Route.userRoute() {
         }
 
         put("/user/location/{dynastyId}") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val dynastyId = call.parameters["dynastyId"]!!
             val request = call.receive<UpdateLocationRequest>()
             userService.updateLocation(userId, dynastyId, request.locationName, request.lat, request.lng, request.status)

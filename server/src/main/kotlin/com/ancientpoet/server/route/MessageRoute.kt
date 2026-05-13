@@ -18,7 +18,7 @@ fun Route.messageRoute() {
 
     authenticate("auth-jwt") {
         post("/conversations/{id}/messages") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val convId = call.parameters["id"]!!.toLong()
             val request = call.receive<SendMessageRequest>()
 
@@ -44,7 +44,7 @@ fun Route.messageRoute() {
         }
 
         get("/conversations/{id}/messages") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val convId = call.parameters["id"]!!.toLong()
             val messages = messageService.getMessages(convId, userId)
             call.respond(HttpStatusCode.OK, messages.map { msg ->
@@ -62,7 +62,7 @@ fun Route.messageRoute() {
         }
 
         get("/conversations/{id}/pending") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val convId = call.parameters["id"]!!.toLong()
             val pending = messageService.getPending(convId, userId)
             val now = java.time.Instant.now()

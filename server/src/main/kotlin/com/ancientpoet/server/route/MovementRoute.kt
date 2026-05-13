@@ -18,7 +18,7 @@ fun Route.movementRoute() {
 
     authenticate("auth-jwt") {
         post("/user/location/{dynastyId}/move") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val dynastyId = call.parameters["dynastyId"]!!
             val request = call.receive<MoveRequest>()
             val result = movementService.startMoving(userId, dynastyId, request.toName, request.toLat, request.toLng)
@@ -31,7 +31,7 @@ fun Route.movementRoute() {
         }
 
         get("/user/location/{dynastyId}/status") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val dynastyId = call.parameters["dynastyId"]!!
             val result = movementService.getStatus(userId, dynastyId)
             call.respond(HttpStatusCode.OK, MovementResponse(

@@ -14,13 +14,12 @@ object DynastiesTable : Table("dynasties") {
 
 object DynastyCitiesTable : Table("dynasty_cities") {
     val id = long("id").autoIncrement()
-    val dynastyId = varchar("dynasty_id", 20).references(DynastiesTable.id)
+    val dynastyId = varchar("dynasty_id", 20)
     val name = varchar("name", 100)
     val modernName = varchar("modern_name", 100).nullable()
     val province = varchar("province", 100).nullable()
     val lat = double("lat")
     val lng = double("lng")
     val isCapital = bool("is_capital").default(false)
-    // geom column is maintained by PostgreSQL trigger (sync_geom_from_latlng)
     override val primaryKey = PrimaryKey(id)
 }

@@ -24,9 +24,9 @@ data class ConversationResponse(
 
 @Serializable
 data class PoetBrief(
-    val id: Long = 0,
     val name: String,
     val dynasty: String = "",
+    val id: Long = 0,
     val portraitUrl: String? = null,
 )
 

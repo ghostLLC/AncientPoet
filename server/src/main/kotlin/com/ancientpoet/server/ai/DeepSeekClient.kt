@@ -52,10 +52,12 @@ class DeepSeekClient(private val config: AppConfig) {
                 ContentPart(type = "image_url", text = null, imageUrl = ImageUrl(url = imageUrl)),
             ),
         )
-        val allMessages = messages + ChatMessage(role = "user", content = "[图片消息]")
+        val historyMessages = messages.map { msg ->
+            VisionChatMessage(role = msg.role, content = listOf(ContentPart(type = "text", text = msg.content, imageUrl = null)))
+        }
         val request = VisionChatCompletionRequest(
             model = config.deepseekModelVision,
-            messages = allMessages.map { it.toVisionMsg() } + visionMessage,
+            messages = historyMessages + visionMessage,
             temperature = config.deepseekTemperature,
             maxTokens = config.deepseekMaxTokens,
         )
@@ -94,4 +96,4 @@ fun ChatMessage.toVisionMsg() = VisionChatMessageSimple(role = role, content = c
     @kotlinx.serialization.SerialName("image_url") val imageUrl: ImageUrl? = null,
 )
 @Serializable data class ImageUrl(val url: String)
-@Serializable data class VisionChatCompletionRequest(val model: String, val messages: List<Any>, val temperature: Double, @kotlinx.serialization.SerialName("max_tokens") val maxTokens: Int)
+@Serializable data class VisionChatCompletionRequest(val model: String, val messages: List<VisionChatMessage>, val temperature: Double, @kotlinx.serialization.SerialName("max_tokens") val maxTokens: Int)

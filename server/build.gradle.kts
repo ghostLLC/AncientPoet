@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.kotlin.datetime)
+    implementation("org.jetbrains.exposed:exposed-java-time:0.57.0")
     implementation(libs.exposed.json)
 
     // Database

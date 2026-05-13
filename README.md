@@ -34,22 +34,24 @@ AncientPoet/
 ├── androidApp/      # Android 应用（Jetpack Compose）
 ├── desktopApp/      # Desktop 应用（Compose Desktop）
 ├── server/          # Ktor 后端服务
-├── data/            # 静态数据（诗人资料、诗词、地图、城市坐标）
+├── data/            # 静态数据（15 位诗人、诗词、5 朝代城市坐标）
 ├── deploy/          # 部署配置（Docker Compose、Nginx）
-└── ARCHITECTURE.md  # 完整架构设计文档
+├── DESIGN/          # 设计系统文档 + 8 屏 HTML 原型 + 截图
+├── ARCHITECTURE.md  # 完整架构设计文档
+└── CLAUDE.md        # Claude Code 操作指南
 ```
 
 ## 📋 开发阶段
 
-1. **Phase 1 (MVP)** — Android + 后端核心，3-5位诗人，开放聊天，基础延迟
-2. **Phase 2** — 15-20位诗人，故事线模式，完整地图交互，绘画功能
-3. **Phase 3** — 社区功能（发帖、评论、分享）
-4. **Phase 4** — Desktop + Web 多平台
-5. **Phase 5** — 商业化（付费诗人、订阅）
+1. **Phase 1 (MVP)** ✅ — Android + 后端核心，5 位诗人，开放聊天，基础延迟
+2. **Phase 2** ✅ — 15 位诗人，故事线模式，完整地图交互，绘画功能，诗词库
+3. **Phase 3** 🔵 — 社区功能（文苑），发帖/评论/点赞/收藏/个人主页
+4. **Phase 4** ⬜ — Desktop + Web 多平台
+5. **Phase 5** ⬜ — 商业化（付费诗人、订阅）
 
 ## 🚀 快速开始
 
-> 详见 [ARCHITECTURE.md](./ARCHITECTURE.md) 获取完整技术架构和实施指南。
+> 详见 [ARCHITECTURE.md](./ARCHITECTURE.md) 获取完整技术架构，[DESIGN/DESIGN.md](./DESIGN/DESIGN.md) 获取设计系统规范。
 
 ### 前置要求
 

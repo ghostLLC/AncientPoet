@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AncientPoet（鸿雁）is a cross-platform "slow communication" app where users exchange letters with AI-powered ancient Chinese poets. Messages incur realistic delays (hours to days) based on geographic distance on dynasty-era maps. The product goal is to encourage deeper, more thoughtful writing by slowing down the pace of conversation.
 
-**Current state**: Phase 1 + Phase 2 + Phase 3 complete. 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, drawing canvas, and community (文苑) all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. Not yet compiled — requires JDK 17+. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
+**Current state**: Phase 1 + Phase 2 complete (compiled + tested). 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, and drawing canvas all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. Phase 3 (community) backend was built but temporarily removed during Ktor 3.x / Exposed 0.57 migration — needs re-integration. All 4 Gradle modules compile on JDK 17 + Android SDK 34. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
 
 ## Tech Stack
 
@@ -26,21 +26,30 @@ AncientPoet（鸿雁）is a cross-platform "slow communication" app where users 
 
 ## Build & Run Commands
 
-Requires JDK 17+. Docker for infrastructure.
+Requires JDK 17+ and Android SDK (for Android target). Docker for infrastructure.
 
 ```bash
+# First time: create local.properties with Android SDK path
+echo "sdk.dir=D:/Android/Sdk" > local.properties
+
 # Infrastructure
 cd deploy && docker-compose up -d          # Start PG + Redis + MinIO
 
-# Server
-cd server && ./gradlew run                 # Ktor on :8080
-./gradlew :server:test                     # Server tests
-./gradlew :server:test --tests "com.ancientpoet.server.service.DelayCalculationServiceTest"
+# Compile all modules (no device needed)
+./gradlew :shared:compileKotlinJvm
+./gradlew :server:compileKotlin
+./gradlew :desktopApp:compileKotlinJvm
+./gradlew :androidApp:compileDebugSources
 
-# Client
-./gradlew :androidApp:installDebug         # Android debug build
+# Run
+./gradlew :server:run                      # Ktor on :8080
 ./gradlew :desktopApp:run                  # Desktop app
-./gradlew :shared:test                     # Shared module tests
+./gradlew :androidApp:installDebug         # Android debug build (needs device/emulator)
+
+# Tests
+./gradlew :server:test
+./gradlew :server:test --tests "com.ancientpoet.server.service.DelayCalculationServiceTest"
+./gradlew :shared:test
 ```
 
 ## Architecture
@@ -59,14 +68,14 @@ cd server && ./gradlew run                 # Ktor on :8080
 
 **Server**: Ktor pipeline — plugins → routes → services → repositories → Exposed:
 - `plugin/` — Authentication (JWT via auth0-jwt), CORS, kotlinx.serialization, rate limiting, status pages
-- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 11 route files: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem, Upload, Community. JWT principal accessed via safe-null pattern: `call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(...)`
+- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 9 active routes: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem. Inside `authenticate("auth-jwt")` blocks, JWT principal accessed via `!!` (safe since Ktor rejects unauthenticated requests before reaching the handler). Community and Upload routes temporarily removed pending Ktor 3.x API migration.
 - `service/` — business logic. Key services:
   - `MessageService.sendMessage()` — store user msg → calc delay → launch AI reply in background coroutine → schedule Redis delivery. Accepts StorylineService and MovementService for Phase 2 delay wiring.
   - `StorylineService` — manages storyline progression: start, advance year, jump to year, get current event
   - `MovementService` — user movement with travel time calculation (50 km/day), auto-arrival detection
   - `DelayCalculationService` — Haversine formula with full multiplier chain: base delay × settled (×0.8) × storyline event (×1.5 for war/exile)
-- `CommunityService` — posts CRUD, comments, likes toggle, repost, favorites, user profiles
-	- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks. 5 repositories: User, Poet, Conversation, Message, Community.
+- `CommunityService` — posts CRUD, comments, likes, repost, favorites, profiles (temporarily removed, pending re-integration)
+	- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks. 4 active repositories: User, Poet, Conversation, Message. Uses `insert { it[col] = val }` pattern (Exposed 0.57), ResultRow access without `.value` on plain Long columns.
 - `ai/` — DeepSeekClient (OpenAI-compatible chat + vision model, 30s timeout), PromptBuilder (Chinese system prompt + painting appreciation), ContextManager (summary + 8 recent rounds), TranslationService (temperature=0.3)
 - `scheduler/` — MessageDeliveryScheduler (Redis sorted set `msg:delivery:schedule`, 1-min polling with SLF4J logging)
 - `di/ServerModule.kt` — Koin module registering all components as singletons
@@ -118,6 +127,9 @@ After 40 messages (20 rounds), `ContextManager.shouldSummarize()` triggers. Olde
 - Dev SMS bypass code `123456` only when `KTOR_DEVELOPMENT=true`
 - All `printStackTrace()` replaced with SLF4J logging (`logger.error(...)`)
 - `StatusPages` catches `Exception` not `Throwable` (allows JVM Errors to propagate)
+- **Exposed 0.57 breaking changes**: `insertAndGetId` replaced with `insert { it[col] = val }` + `result[Table.id]`; `timestamptz` replaced with `text` for timestamp columns; FK `.references()` removed (constraints enforced at DB level via Flyway); ResultRow access without `.value` on plain Long columns
+- **Ktor 3.x breaking changes**: route handlers no longer `inline`, so `return@label` is prohibited — use `!!` on JWT principal inside `authenticate` blocks; `RateLimit.refillPeriod` takes `Duration` not `Int`; multipart API uses `readPart()` iterator
+- **Android SDK**: located at `D:/Android/Sdk` on this machine; `local.properties` must contain `sdk.dir=D:/Android/Sdk`; `compileSdk=34` with `androidx-core:1.13.1`
 
 ## Known Gaps (Requires External Credentials/Setup)
 
@@ -158,9 +170,9 @@ All Phase 2 features implemented (backend + frontend):
 | Drawing/painting | Vision API wiring | DrawingCanvas dialog |
 | Delay formula | Settled + event multipliers | Factor breakdown in UI |
 
-## Phase 3: Complete
+## Phase 3: Backend implemented (frontend partially, temporarily removed)
 
-Community features (文苑) implemented:
+Community features built but removed during compile migration — needs Ktor 3.x API re-integration:
 
 | Feature | Backend | Frontend |
 |---------|---------|----------|

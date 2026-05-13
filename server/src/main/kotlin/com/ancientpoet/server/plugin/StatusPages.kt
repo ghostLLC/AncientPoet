@@ -7,13 +7,11 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 
 fun Application.configureStatusPages() {
+    val logger = this@configureStatusPages.environment.log
     install(StatusPages) {
         exception<Exception> { call, cause ->
-            call.application.log.error("Unhandled exception", cause)
-            call.respond(
-                HttpStatusCode.InternalServerError,
-                mapOf("error" to (cause.message ?: "Internal server error"))
-            )
+            logger.error("Unhandled exception", cause)
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (cause.message ?: "Internal server error")))
         }
     }
 }

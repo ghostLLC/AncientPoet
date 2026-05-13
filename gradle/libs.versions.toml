@@ -11,7 +11,7 @@ koin = "4.0.2"
 sqldelight = "2.0.2"
 coil = "3.0.4"
 agp = "8.7.2"
-android-compileSdk = "35"
+android-compileSdk = "34"
 android-minSdk = "26"
 android-targetSdk = "35"
 flyway = "10.20.0"
@@ -80,7 +80,7 @@ sqldelight-jvm = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "
 sqldelight-native = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 
 # Android
-androidx-core = { module = "androidx.core:core-ktx", version = "1.15.0" }
+androidx-core = { module = "androidx.core:core-ktx", version = "1.13.1" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version = "1.9.3" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging", version = "24.1.0" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

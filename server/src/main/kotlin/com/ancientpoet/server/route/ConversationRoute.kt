@@ -25,7 +25,7 @@ fun Route.conversationRoute() {
 
     authenticate("auth-jwt") {
         post("/conversations") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val request = call.receive<CreateConversationRequest>()
             val conv = conversationService.createConversation(
                 userId, request.poetId, request.dynastyId, request.backgroundSetting,
@@ -55,7 +55,7 @@ fun Route.conversationRoute() {
         }
 
         get("/conversations") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val conversations = conversationService.listUserConversations(userId)
             call.respond(HttpStatusCode.OK, conversations.map { conv ->
                 val poet = poetRepository.findById(conv.poetId)
@@ -69,7 +69,7 @@ fun Route.conversationRoute() {
         }
 
         get("/conversations/{id}") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val convId = call.parameters["id"]!!.toLong()
             val conv = conversationService.getConversation(convId)
             if (conv != null && conv.userId == userId) {
@@ -86,7 +86,7 @@ fun Route.conversationRoute() {
         }
 
         delete("/conversations/{id}") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong() ?: return@authenticate call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "未授权"))
+            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
             val convId = call.parameters["id"]!!.toLong()
             conversationService.deleteConversation(convId, userId)
             call.respond(HttpStatusCode.OK, mapOf("message" to "已删除"))
