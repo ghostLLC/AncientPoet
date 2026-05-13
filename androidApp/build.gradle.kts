@@ -16,6 +16,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "0.1.0"
+        manifestPlaceholders["JPUSH_APPKEY"] = System.getenv("JPUSH_APP_KEY") ?: ""
+        manifestPlaceholders["JPUSH_CHANNEL"] = "developer-default"
     }
 
     buildFeatures {
@@ -46,5 +48,7 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
-    implementation(libs.firebase.messaging)
+    // JPush (极光推送) — uncomment + sync after creating JPush account at jiguang.cn
+    // implementation("cn.jiguang.sdk:jpush:5.3.0")
+    // implementation("cn.jiguang.sdk:jcore:4.1.0")
 }
