@@ -172,3 +172,55 @@ plan is intended to fix. It does not claim that the Android app, Desktop
 source, test suite, CI workflow, or Docker daemon is working. The generated
 `server/bin` inventory is recorded for later cleanup, and machine-local
 `local.properties` remains ignored and is not part of the baseline commit.
+
+## Final comparison — 2026-08-18
+
+The following results were captured from fresh, clean Gradle invocations on
+the final Work Package 6 tree.
+
+| Target | Before repair | After repair |
+|---|---|---|
+| Server Kotlin | Passed compilation only | `:server:compileKotlin` passed; executable fat JAR also built and started |
+| Shared JVM | Passed | `:shared:compileKotlinJvm` passed |
+| Shared Android | Failed: Java 17 / Kotlin 21 mismatch | `:shared:compileDebugKotlinAndroid` passed on JVM target 17 |
+| Android app | Kotlin compile task absent | `:androidApp:assembleDebug` passed; APK size 19,880,262 bytes |
+| Desktop | `compileKotlinJvm NO-SOURCE` | Real `Main.kt` compiled with `:desktopApp:compileKotlinJvm` |
+| Tests | 0 tracked tests; Shared/Server `NO-SOURCE`; Android blocked | 35 passing tests: Shared 9, Server 12, Android 14; no target test task was `NO-SOURCE` |
+| Local infrastructure | Compose syntax valid, Docker daemon unavailable | Docker Desktop launched; PostgreSQL, Redis, MinIO healthy |
+| API smoke | Not runnable | Passed three times in total, including the final post-cleanup run; two consecutive repeatability runs passed in Work Package 4 |
+| Generated server snapshot | 67 tracked `server/bin` files | 0 tracked `server/bin` files; path ignored |
+| CI | No workflow | `.github/workflows/quality.yml` mirrors the local test/build quality gate; remote run not executed because nothing was pushed |
+
+Final verification commands:
+
+```powershell
+.\gradlew.bat :shared:jvmTest :server:test :androidApp:testDebugUnitTest --rerun-tasks --no-daemon --console=plain "-Dhttp.proxyHost=" "-Dhttps.proxyHost="
+.\gradlew.bat :shared:compileKotlinJvm :shared:compileDebugKotlinAndroid :server:compileKotlin :desktopApp:compileKotlinJvm :androidApp:assembleDebug --rerun-tasks --no-daemon --console=plain "-Dhttp.proxyHost=" "-Dhttps.proxyHost="
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
+```
+
+All three commands exited `0`. Static verification also produced no
+`git diff --check` findings, found non-empty tracked test suites, and found no
+tracked `server/bin` files.
+
+Credential-gated checks remain intentionally unclaimed: real DeepSeek API
+generation/translation/vision, production SMS provider delivery, and JPush
+device delivery. These require external accounts and are listed in
+`docs/STATUS.md`.
+
+### Work package commits
+
+| Package | Commit |
+|---|---|
+| Baseline / Task 0 | `5e359d0` |
+| Work Package 1 — build wiring | `0c80623` |
+| Work Package 2 — Android source repair | `f3acdfc` |
+| Work Package 3 — auth/API/session final state | `4c053ab` |
+| Work Package 4 — health and smoke workflow | `63ac069` |
+| Work Package 5 — tests and CI | `ae53fe6` |
+| Work Package 6 — cleanup and truthful docs | `e83d546` |
+
+Work Package 3 also contains the reviewable intermediate commits `790406a`
+and `c3da129`; `4c053ab` is its accepted final state. This final comparison is
+recorded in the immediately following evidence-only documentation commit so
+that the Work Package 6 SHA can be stated exactly rather than self-referenced.
