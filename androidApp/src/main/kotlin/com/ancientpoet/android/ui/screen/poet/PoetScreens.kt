@@ -71,7 +71,7 @@ fun PoetDetailScreen(poetId: Long, onBack: () -> Unit, onStartConversation: (Lon
     var selectedYear by remember { mutableStateOf<Int?>(null) }
     var showStorylineMode by remember { mutableStateOf(false) }
 
-    LaunchedEffect(poetId) { viewModel.loadPoetDetail(poetId); viewModel.loadLifeEvents(poetId) }
+    LaunchedEffect(poetId) { viewModel.loadPoetDetailInitial(poetId) }
 
     Scaffold(
         containerColor = RicePaper,
@@ -98,7 +98,7 @@ fun PoetDetailScreen(poetId: Long, onBack: () -> Unit, onStartConversation: (Lon
         ApiErrorBanner(
             message = state.errorMessage,
             canRetry = state.canRetry,
-            onRetry = { viewModel.loadPoetDetail(poetId); viewModel.loadLifeEvents(poetId) },
+            onRetry = { viewModel.retryPoetDetail(poetId) },
             modifier = Modifier.padding(padding),
         )
         state.selectedPoet?.let { poet ->

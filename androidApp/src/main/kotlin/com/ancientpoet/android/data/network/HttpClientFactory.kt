@@ -17,6 +17,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -45,6 +46,12 @@ object HttpClientFactory {
         sessionController: SessionController,
     ) {
         val refreshMutex = Mutex()
+        val protectedPathPrefix = BuildConfig.API_BASE_URL
+            .substringAfter("://", BuildConfig.API_BASE_URL)
+            .substringAfter('/', "")
+            .substringBefore('?')
+            .trim('/')
+            .let { path -> if (path.isEmpty()) "/" else "/$path/" }
 
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true })
@@ -63,36 +70,40 @@ object HttpClientFactory {
                 }
                 refreshTokens {
                     refreshMutex.withLock {
-                        val current = sessionController.load() ?: return@withLock null
+                        val snapshot = sessionController.captureSession() ?: return@withLock null
                         oldTokens?.accessToken?.let { oldAccessToken ->
-                            if (current.accessToken != oldAccessToken) {
-                                return@withLock BearerTokens(current.accessToken, current.refreshToken)
+                            if (snapshot.tokens.accessToken != oldAccessToken) {
+                                return@withLock snapshot.tokens.asBearerTokens()
                             }
                         }
                         try {
                             val response = client.post("auth/refresh") {
                                 markAsRefreshTokenRequest()
-                                setBody(RefreshRequest(current.refreshToken))
+                                setBody(RefreshRequest(snapshot.tokens.refreshToken))
                             }
                             if (!response.status.isSuccess()) {
-                                sessionController.clear()
-                                return@withLock null
+                                return@withLock sessionController
+                                    .clearAfterRefreshFailure(snapshot)
+                                    ?.asBearerTokens()
                             }
                             val refreshed = response.body<RefreshResponse>()
-                            val updated = sessionController.updateAccessToken(
-                                expectedAccessToken = current.accessToken,
+                            sessionController.applyRefresh(
+                                snapshot = snapshot,
                                 accessToken = refreshed.accessToken,
-                            ) ?: return@withLock null
-                            BearerTokens(updated.accessToken, updated.refreshToken)
+                            )?.asBearerTokens()
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
                         } catch (_: Throwable) {
-                            sessionController.clear()
-                            null
+                            sessionController
+                                .clearAfterRefreshFailure(snapshot)
+                                ?.asBearerTokens()
                         }
                     }
                 }
                 sendWithoutRequest { request ->
-                    request.url.build().encodedPath.startsWith("/api/v1/") &&
-                        !request.url.build().encodedPath.startsWith("/api/v1/auth/")
+                    val path = request.url.build().encodedPath
+                    path.startsWith(protectedPathPrefix) &&
+                        !path.startsWith("${protectedPathPrefix}auth/")
                 }
             }
         }
@@ -104,3 +115,6 @@ object HttpClientFactory {
     @Serializable
     private data class RefreshResponse(val accessToken: String)
 }
+
+private fun com.ancientpoet.shared.auth.AuthTokens.asBearerTokens() =
+    BearerTokens(accessToken, refreshToken)

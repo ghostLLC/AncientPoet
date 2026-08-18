@@ -15,55 +15,94 @@ class PoetViewModel(private val api: AncientPoetApi) : ViewModel() {
 
     fun loadPoets() {
         viewModelScope.launch {
-            setLoading()
+            beginListLoad()
             when (val result = api.get<PoetListRes>("poets")) {
                 is ApiResult.Success -> _state.value = _state.value.copy(
                     poets = result.value.poets.map { PoetItem(it.id, it.name, it.dynastyName ?: "", it.birthYear, it.deathYear) },
                     isLoading = false,
-                    errorMessage = null,
+                    listError = null,
                 )
-                is ApiResult.Failure -> setFailure(result)
+                is ApiResult.Failure -> setListFailure(result)
             }
         }
     }
 
     fun loadPoetDetail(poetId: Long) {
-        viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<PoetDetailRes>("poets/$poetId")) {
-                is ApiResult.Success -> {
-                    val p = result.value
-                    _state.value = _state.value.copy(
-                        selectedPoet = PoetDetail(p.id, p.name, p.courtesyName, p.artName, p.dynastyName ?: "", p.birthYear, p.deathYear, p.biographySummary, p.writingStyle),
-                        isLoading = false,
-                        errorMessage = null,
-                    )
-                }
-                is ApiResult.Failure -> setFailure(result)
-            }
-        }
+        viewModelScope.launch { loadPoetDetailInternal(poetId) }
     }
 
     fun loadLifeEvents(poetId: Long) {
+        viewModelScope.launch { loadLifeEventsInternal(poetId) }
+    }
+
+    fun loadPoetDetailInitial(poetId: Long) {
         viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<List<LifeEventRes>>("poets/$poetId/life-events")) {
-                is ApiResult.Success -> _state.value = _state.value.copy(
-                    lifeEvents = result.value.map { LifeEventItem(it.year, it.title, it.description, it.eventType) },
-                    isLoading = false,
-                    errorMessage = null,
-                )
-                is ApiResult.Failure -> setFailure(result)
+            loadPoetDetailInternal(poetId)
+            loadLifeEventsInternal(poetId)
+        }
+    }
+
+    fun retryPoetDetail(poetId: Long) {
+        viewModelScope.launch {
+            val current = _state.value
+            if (current.detailError?.retryable == true) {
+                loadPoetDetailInternal(poetId)
+            }
+            if (current.lifeEventsError?.retryable == true) {
+                loadLifeEventsInternal(poetId)
             }
         }
     }
 
-    private fun setLoading() {
-        _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
+    private suspend fun loadPoetDetailInternal(poetId: Long) {
+        beginDetailLoad()
+        when (val result = api.get<PoetDetailRes>("poets/$poetId")) {
+            is ApiResult.Success -> {
+                val p = result.value
+                _state.value = _state.value.copy(
+                    selectedPoet = PoetDetail(p.id, p.name, p.courtesyName, p.artName, p.dynastyName ?: "", p.birthYear, p.deathYear, p.biographySummary, p.writingStyle),
+                    isLoading = false,
+                    detailError = null,
+                )
+            }
+            is ApiResult.Failure -> setDetailFailure(result)
+        }
     }
 
-    private fun setFailure(result: ApiResult.Failure) {
-        _state.value = _state.value.copy(isLoading = false, errorMessage = result.message, canRetry = result.retryable)
+    private suspend fun loadLifeEventsInternal(poetId: Long) {
+        beginLifeEventsLoad()
+        when (val result = api.get<List<LifeEventRes>>("poets/$poetId/life-events")) {
+            is ApiResult.Success -> _state.value = _state.value.copy(
+                lifeEvents = result.value.map { LifeEventItem(it.year, it.title, it.description, it.eventType) },
+                isLoading = false,
+                lifeEventsError = null,
+            )
+            is ApiResult.Failure -> setLifeEventsFailure(result)
+        }
+    }
+
+    private fun beginListLoad() {
+        _state.value = _state.value.copy(isLoading = true, listError = null)
+    }
+
+    private fun beginDetailLoad() {
+        _state.value = _state.value.copy(isLoading = true, detailError = null)
+    }
+
+    private fun beginLifeEventsLoad() {
+        _state.value = _state.value.copy(isLoading = true, lifeEventsError = null)
+    }
+
+    private fun setListFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, listError = PoetOperationError(result.message, result.retryable))
+    }
+
+    private fun setDetailFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, detailError = PoetOperationError(result.message, result.retryable))
+    }
+
+    private fun setLifeEventsFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, lifeEventsError = PoetOperationError(result.message, result.retryable))
     }
 }
 
@@ -72,9 +111,20 @@ data class PoetState(
     val selectedPoet: PoetDetail? = null,
     val lifeEvents: List<LifeEventItem> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val canRetry: Boolean = false,
-)
+    val listError: PoetOperationError? = null,
+    val detailError: PoetOperationError? = null,
+    val lifeEventsError: PoetOperationError? = null,
+) {
+    val errorMessage: String?
+        get() = listOfNotNull(listError, detailError, lifeEventsError)
+            .joinToString("；") { it.message }
+            .takeIf { it.isNotEmpty() }
+
+    val canRetry: Boolean
+        get() = listOfNotNull(listError, detailError, lifeEventsError).any { it.retryable }
+}
+
+data class PoetOperationError(val message: String, val retryable: Boolean)
 
 data class PoetItem(val id: Long, val name: String, val dynastyName: String, val birthYear: Int, val deathYear: Int)
 data class PoetDetail(val id: Long, val name: String, val courtesyName: String?, val artName: String?, val dynastyName: String, val birthYear: Int, val deathYear: Int, val biographySummary: String?, val writingStyle: String)

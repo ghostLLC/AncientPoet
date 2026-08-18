@@ -14,15 +14,16 @@ class SessionViewModel(private val sessionController: SessionController) : ViewM
 
     init {
         viewModelScope.launch {
-            _status.value = if (sessionController.load() == null) {
-                SessionStatus.Anonymous
-            } else {
-                SessionStatus.Authenticated
-            }
-        }
-        viewModelScope.launch {
             sessionController.sessionEvents.collect { authenticated ->
-                _status.value = if (authenticated) SessionStatus.Authenticated else SessionStatus.Anonymous
+                _status.value = when (authenticated) {
+                    true -> SessionStatus.Authenticated
+                    false -> SessionStatus.Anonymous
+                    null -> if (sessionController.load() == null) {
+                        SessionStatus.Anonymous
+                    } else {
+                        SessionStatus.Authenticated
+                    }
+                }
             }
         }
     }

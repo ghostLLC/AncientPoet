@@ -37,9 +37,7 @@ fun ConversationScreen(conversationId: Long, onBack: () -> Unit, initialYear: In
     val listState = rememberLazyListState()
 
     LaunchedEffect(conversationId, initialYear) {
-        viewModel.loadConversation(conversationId)
-        viewModel.loadMessages(conversationId)
-        initialYear?.let { viewModel.jumpToYear(conversationId, it) }
+        viewModel.loadInitial(conversationId, initialYear)
     }
     LaunchedEffect(state.messages.size) { if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.size - 1) }
 
@@ -169,7 +167,7 @@ fun ConversationScreen(conversationId: Long, onBack: () -> Unit, initialYear: In
                 ApiErrorBanner(
                     message = state.errorMessage,
                     canRetry = state.canRetry,
-                    onRetry = { viewModel.loadMessages(conversationId); viewModel.loadConversation(conversationId) },
+                    onRetry = { viewModel.retryInitialLoad(conversationId) },
                 )
                 Column(
                     modifier = Modifier.fillMaxWidth(),

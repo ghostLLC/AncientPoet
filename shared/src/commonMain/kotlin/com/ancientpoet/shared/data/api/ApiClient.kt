@@ -2,6 +2,8 @@ package com.ancientpoet.shared.data.api
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -13,6 +15,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
+import kotlinx.io.IOException
 
 class AncientPoetApi(@PublishedApi internal val client: HttpClient) {
     suspend inline fun <reified T> get(path: String): ApiResult<T> =
@@ -102,11 +105,9 @@ class AncientPoetApi(@PublishedApi internal val client: HttpClient) {
     internal fun Throwable.isNetworkFailure(): Boolean {
         var current: Throwable? = this
         while (current != null) {
-            val name = current::class.simpleName.orEmpty()
-            if (name.contains("IOException") ||
-                name.contains("Connect") ||
-                name.contains("Timeout") ||
-                name.contains("UnresolvedAddress")
+            if (current is IOException ||
+                current is ConnectTimeoutException ||
+                current is HttpRequestTimeoutException
             ) {
                 return true
             }

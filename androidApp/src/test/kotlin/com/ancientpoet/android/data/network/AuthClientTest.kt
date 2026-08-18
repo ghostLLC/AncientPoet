@@ -15,7 +15,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlinx.serialization.Serializable
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -105,6 +108,89 @@ class AuthClientTest {
     }
 
     @Test
+    fun logoutDuringRefreshDoesNotReinstallBearerTokens() = runTest {
+        val store = InMemorySessionStore(AuthTokens("access-old", "refresh-current", 7))
+        val refreshStarted = CompletableDeferred<Unit>()
+        val releaseRefresh = CompletableDeferred<Unit>()
+        var protectedRequests = 0
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath.endsWith("/auth/refresh")) {
+                refreshStarted.complete(Unit)
+                releaseRefresh.await()
+                respondJson("""{"accessToken":"access-new"}""")
+            } else {
+                protectedRequests++
+                respondError(HttpStatusCode.Unauthorized)
+            }
+        }
+        val controller = SessionController(store)
+        val client = HttpClientFactory.create(controller, engine)
+        val call = async { AncientPoetApi(client).get<TestPayload>("protected") }
+
+        refreshStarted.await()
+        controller.logout()
+        assertNull(store.value)
+        releaseRefresh.complete(Unit)
+
+        val failure = assertIs<ApiResult.Failure>(call.await())
+        assertEquals(ApiErrorKind.UNAUTHORIZED, failure.kind)
+        assertEquals(1, protectedRequests)
+        assertNull(store.value)
+        client.close()
+    }
+
+    @Test
+    fun failedRefreshDoesNotClearSessionSavedWhileRefreshIsInFlight() = runTest {
+        val oldTokens = AuthTokens("access-old", "refresh-old", 7)
+        val newTokens = AuthTokens("access-new-session", "refresh-new-session", 8)
+        val store = InMemorySessionStore(oldTokens)
+        val refreshStarted = CompletableDeferred<Unit>()
+        val releaseRefresh = CompletableDeferred<Unit>()
+        var protectedRequests = 0
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath.endsWith("/auth/refresh")) {
+                refreshStarted.complete(Unit)
+                releaseRefresh.await()
+                respondError(HttpStatusCode.Unauthorized)
+            } else {
+                protectedRequests++
+                if (protectedRequests == 1) {
+                    respondError(HttpStatusCode.Unauthorized)
+                } else {
+                    respondJson("""{"value":"retried-with-new-session"}""")
+                }
+            }
+        }
+        val controller = SessionController(store)
+        val client = HttpClientFactory.create(controller, engine)
+        val call = async { AncientPoetApi(client).get<TestPayload>("protected") }
+
+        refreshStarted.await()
+        controller.save(newTokens)
+        releaseRefresh.complete(Unit)
+
+        val success = assertIs<ApiResult.Success<TestPayload>>(call.await())
+        assertEquals("retried-with-new-session", success.value.value)
+        assertEquals(2, protectedRequests)
+        assertEquals(newTokens, store.value)
+        client.close()
+    }
+
+    @Test
+    fun ioExceptionIsMappedToRetryableNetworkFailure() = runTest {
+        val engine = MockEngine { throw IOException("offline") }
+        val controller = SessionController(InMemorySessionStore(null))
+        val client = HttpClientFactory.create(controller, engine)
+
+        val failure = assertIs<ApiResult.Failure>(AncientPoetApi(client).get<TestPayload>("protected"))
+
+        assertEquals(ApiErrorKind.NETWORK, failure.kind)
+        assertEquals("网络连接失败", failure.message)
+        assertEquals(true, failure.retryable)
+        client.close()
+    }
+
+    @Test
     fun logoutClearsSessionAndBearerCache() = runTest {
         val store = InMemorySessionStore(AuthTokens("access-old", "refresh-old", 7))
         val headers = mutableListOf<String?>()
@@ -118,6 +204,7 @@ class AuthClientTest {
 
         assertIs<ApiResult.Success<TestPayload>>(api.get<TestPayload>("protected"))
         controller.logout()
+        assertNull(store.value)
         store.value = AuthTokens("access-after-logout", "refresh-after-logout", 7)
         assertIs<ApiResult.Success<TestPayload>>(api.get<TestPayload>("protected-again"))
 

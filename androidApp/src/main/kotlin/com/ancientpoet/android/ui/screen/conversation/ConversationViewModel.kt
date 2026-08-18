@@ -14,91 +14,132 @@ class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
     val state: StateFlow<ConversationState> = _state
 
     fun loadConversation(conversationId: Long) {
-        viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<StorylineRes>("conversations/$conversationId/storyline/state")) {
-                is ApiResult.Success -> {
-                    val sl = result.value
-                    _state.value = _state.value.copy(
-                        storyline = StorylineInfo(sl.currentYear, sl.poetAge, sl.locationName, sl.activeEvent, sl.eventDescription, sl.eventType),
-                        isLoading = false,
-                        errorMessage = null,
-                    )
-                }
-                is ApiResult.Failure -> setFailure(result)
-            }
-        }
+        viewModelScope.launch { loadConversationInternal(conversationId) }
     }
 
     fun loadMessages(conversationId: Long) {
+        viewModelScope.launch { loadMessagesInternal(conversationId) }
+    }
+
+    fun loadInitial(conversationId: Long, initialYear: Int? = null) {
         viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<List<MsgResponse>>("conversations/$conversationId/messages")) {
-                is ApiResult.Success -> _state.value = _state.value.copy(
-                    messages = result.value.map { MsgItem(it.id, it.senderType, it.contentText ?: "", it.translation, it.contentImageUrl) },
-                    isLoading = false,
-                    errorMessage = null,
-                )
-                is ApiResult.Failure -> setFailure(result)
+            loadConversationInternal(conversationId)
+            loadMessagesInternal(conversationId)
+            initialYear?.let { jumpToYearInternal(conversationId, it) }
+        }
+    }
+
+    fun retryInitialLoad(conversationId: Long) {
+        viewModelScope.launch {
+            val current = _state.value
+            if (current.conversationError?.retryable == true) {
+                loadConversationInternal(conversationId)
+            }
+            if (current.messagesError?.retryable == true) {
+                loadMessagesInternal(conversationId)
             }
         }
     }
 
     fun sendMessage(conversationId: Long, text: String, imageUrl: String? = null) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isSending = true, errorMessage = null, canRetry = false)
+            _state.value = _state.value.copy(isSending = true, actionError = null)
             when (val result = api.post<MessageResponse>("conversations/$conversationId/messages", SendReq(text.ifBlank { null }, imageUrl))) {
                 is ApiResult.Success -> {
                     _state.value = _state.value.copy(isSending = false)
-                    loadMessages(conversationId)
-                    loadConversation(conversationId)
+                    loadMessagesInternal(conversationId)
+                    loadConversationInternal(conversationId)
                 }
                 is ApiResult.Failure -> _state.value = _state.value.copy(
                     isSending = false,
-                    errorMessage = result.message,
-                    canRetry = result.retryable,
+                    actionError = OperationError(result.message, result.retryable),
                 )
             }
         }
     }
 
     fun jumpToYear(conversationId: Long, year: Int) {
-        viewModelScope.launch {
-            setLoading()
-            when (val result = api.post<StorylineRes>("conversations/$conversationId/storyline/jump", JumpReq(year))) {
-                is ApiResult.Success -> {
-                    val sl = result.value
-                    _state.value = _state.value.copy(
-                        storyline = StorylineInfo(sl.currentYear, sl.poetAge, sl.locationName, sl.activeEvent, sl.eventDescription, sl.eventType),
-                        isLoading = false,
-                        errorMessage = null,
-                    )
-                }
-                is ApiResult.Failure -> setFailure(result)
-            }
-        }
+        viewModelScope.launch { jumpToYearInternal(conversationId, year) }
     }
 
     fun createConversation(poetId: Long, year: Int, onCreated: (Long) -> Unit) {
         viewModelScope.launch {
-            setLoading()
+            beginAction()
             val backgroundSetting = year.takeIf { it != 0 }?.let { "storylineYear=$it" }
             when (val result = api.post<ConversationCreatedResponse>("conversations", CreateConversationRequest(poetId, backgroundSetting = backgroundSetting))) {
                 is ApiResult.Success -> {
-                    _state.value = _state.value.copy(isLoading = false, errorMessage = null)
+                    _state.value = _state.value.copy(isLoading = false, actionError = null)
                     onCreated(result.value.id)
                 }
-                is ApiResult.Failure -> setFailure(result)
+                is ApiResult.Failure -> setActionFailure(result)
             }
         }
     }
 
-    private fun setLoading() {
-        _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
+    private suspend fun loadConversationInternal(conversationId: Long) {
+        beginConversationLoad()
+        when (val result = api.get<StorylineRes>("conversations/$conversationId/storyline/state")) {
+            is ApiResult.Success -> {
+                val sl = result.value
+                _state.value = _state.value.copy(
+                    storyline = StorylineInfo(sl.currentYear, sl.poetAge, sl.locationName, sl.activeEvent, sl.eventDescription, sl.eventType),
+                    isLoading = false,
+                    conversationError = null,
+                )
+            }
+            is ApiResult.Failure -> setConversationFailure(result)
+        }
     }
 
-    private fun setFailure(result: ApiResult.Failure) {
-        _state.value = _state.value.copy(isLoading = false, errorMessage = result.message, canRetry = result.retryable)
+    private suspend fun loadMessagesInternal(conversationId: Long) {
+        beginMessagesLoad()
+        when (val result = api.get<List<MsgResponse>>("conversations/$conversationId/messages")) {
+            is ApiResult.Success -> _state.value = _state.value.copy(
+                messages = result.value.map { MsgItem(it.id, it.senderType, it.contentText ?: "", it.translation, it.contentImageUrl) },
+                isLoading = false,
+                messagesError = null,
+            )
+            is ApiResult.Failure -> setMessagesFailure(result)
+        }
+    }
+
+    private suspend fun jumpToYearInternal(conversationId: Long, year: Int) {
+        beginAction()
+        when (val result = api.post<StorylineRes>("conversations/$conversationId/storyline/jump", JumpReq(year))) {
+            is ApiResult.Success -> {
+                val sl = result.value
+                _state.value = _state.value.copy(
+                    storyline = StorylineInfo(sl.currentYear, sl.poetAge, sl.locationName, sl.activeEvent, sl.eventDescription, sl.eventType),
+                    isLoading = false,
+                    actionError = null,
+                )
+            }
+            is ApiResult.Failure -> setActionFailure(result)
+        }
+    }
+
+    private fun beginConversationLoad() {
+        _state.value = _state.value.copy(isLoading = true, conversationError = null)
+    }
+
+    private fun beginMessagesLoad() {
+        _state.value = _state.value.copy(isLoading = true, messagesError = null)
+    }
+
+    private fun beginAction() {
+        _state.value = _state.value.copy(isLoading = true, actionError = null)
+    }
+
+    private fun setConversationFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, conversationError = OperationError(result.message, result.retryable))
+    }
+
+    private fun setMessagesFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, messagesError = OperationError(result.message, result.retryable))
+    }
+
+    private fun setActionFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, actionError = OperationError(result.message, result.retryable))
     }
 }
 
@@ -108,9 +149,20 @@ data class ConversationState(
     val poetName: String = "",
     val storyline: StorylineInfo? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val canRetry: Boolean = false,
-)
+    val conversationError: OperationError? = null,
+    val messagesError: OperationError? = null,
+    val actionError: OperationError? = null,
+) {
+    val errorMessage: String?
+        get() = listOfNotNull(conversationError, messagesError, actionError)
+            .joinToString("；") { it.message }
+            .takeIf { it.isNotEmpty() }
+
+    val canRetry: Boolean
+        get() = listOfNotNull(conversationError, messagesError, actionError).any { it.retryable }
+}
+
+data class OperationError(val message: String, val retryable: Boolean)
 
 data class MsgItem(val id: Long, val senderType: String, val contentText: String, val translation: String?, val imageUrl: String? = null)
 data class StorylineInfo(val currentYear: Int, val poetAge: Int, val locationName: String, val activeEvent: String?, val eventDescription: String?, val eventType: String)
