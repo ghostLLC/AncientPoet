@@ -2,33 +2,46 @@ package com.ancientpoet.android.ui.screen.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
+import com.ancientpoet.shared.data.api.AncientPoetApi
+import com.ancientpoet.shared.data.api.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-class HomeViewModel(private val client: HttpClient) : ViewModel() {
+class HomeViewModel(private val api: AncientPoetApi) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
 
-    init { loadConversations() }
+    init {
+        loadConversations()
+    }
 
     fun loadConversations() {
         viewModelScope.launch {
-            try {
-                val response: List<ConvResponse> = client.get("http://10.0.2.2:8080/api/v1/conversations").body()
-                _state.value = _state.value.copy(conversations = response.map { ConvItem(it.id, it.poet.name, it.poet.dynasty, "") })
-            } catch (e: Exception) {
-                // Silently fail; user sees empty state
+            _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
+            when (val result = api.get<List<ConvResponse>>("conversations")) {
+                is ApiResult.Success -> _state.value = _state.value.copy(
+                    conversations = result.value.map { ConvItem(it.id, it.poet.name, it.poet.dynasty, "") },
+                    isLoading = false,
+                )
+                is ApiResult.Failure -> _state.value = _state.value.copy(
+                    isLoading = false,
+                    errorMessage = result.message,
+                    canRetry = result.retryable,
+                )
             }
         }
     }
 }
 
-data class HomeState(val conversations: List<ConvItem> = emptyList())
+data class HomeState(
+    val conversations: List<ConvItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val canRetry: Boolean = false,
+)
+
 data class ConvItem(val id: Long, val poetName: String, val dynasty: String, val lastMessage: String)
 
 @Serializable data class ConvResponse(val id: Long, val poet: PoetBrief, val mode: String, val dynastyId: String)

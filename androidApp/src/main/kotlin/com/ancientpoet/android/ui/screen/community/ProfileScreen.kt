@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.theme.*
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +36,12 @@ fun ProfileScreen(
             )
         },
     ) { padding ->
+        ApiErrorBanner(
+            message = state.errorMessage,
+            canRetry = state.canRetry,
+            onRetry = { viewModel.loadProfile(userId) },
+            modifier = Modifier.padding(padding),
+        )
         Column(
             modifier = Modifier.padding(padding).fillMaxSize().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

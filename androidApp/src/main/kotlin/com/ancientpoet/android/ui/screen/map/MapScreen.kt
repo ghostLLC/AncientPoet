@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.theme.*
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +68,11 @@ fun MapScreen(onBack: () -> Unit, viewModel: MapViewModel = koinViewModel()) {
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(RicePaper.copy(alpha = 0.5f))) {
+            ApiErrorBanner(
+                message = state.errorMessage,
+                canRetry = state.canRetry,
+                onRetry = { viewModel.loadMapData(state.selectedDynasty) },
+            )
             // Map canvas
             Canvas(modifier = Modifier.fillMaxWidth().weight(1f).background(RicePaper.copy(alpha = 0.3f))) {
                 val w = size.width; val h = size.height

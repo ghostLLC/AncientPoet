@@ -15,6 +15,9 @@ kotlin {
     }
 }
 
+val apiBaseUrl = providers.gradleProperty("ANCIENT_POET_API_BASE_URL")
+    .orElse("http://10.0.2.2:8080/api/v1/")
+
 android {
     namespace = "com.ancientpoet.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -25,12 +28,14 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl.get()}\"")
         manifestPlaceholders["JPUSH_APPKEY"] = System.getenv("JPUSH_APP_KEY") ?: ""
         manifestPlaceholders["JPUSH_CHANNEL"] = "developer-default"
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -61,12 +66,16 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.auth)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.ktor.client.mock)
     // JPush (极光推送) — uncomment + sync after creating JPush account at jiguang.cn
     // implementation("cn.jiguang.sdk:jpush:5.3.0")
     // implementation("cn.jiguang.sdk:jcore:4.1.0")

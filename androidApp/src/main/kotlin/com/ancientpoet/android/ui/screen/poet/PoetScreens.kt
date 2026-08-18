@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.component.StorylineTimeline
 import com.ancientpoet.android.ui.component.TimelineEvent
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import com.ancientpoet.android.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
 
@@ -38,7 +39,13 @@ fun PoetListScreen(onPoetClick: (Long) -> Unit, onBack: () -> Unit, viewModel: P
             )
         },
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            ApiErrorBanner(
+                message = state.errorMessage,
+                canRetry = state.canRetry,
+                onRetry = viewModel::loadPoets,
+            )
+            LazyColumn(modifier = Modifier.weight(1f)) {
             items(state.poets) { poet ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable { onPoetClick(poet.id) },
@@ -52,6 +59,7 @@ fun PoetListScreen(onPoetClick: (Long) -> Unit, onBack: () -> Unit, viewModel: P
                     )
                 }
             }
+        }
         }
     }
 }
@@ -87,6 +95,12 @@ fun PoetDetailScreen(poetId: Long, onBack: () -> Unit, onStartConversation: (Lon
             }
         },
     ) { padding ->
+        ApiErrorBanner(
+            message = state.errorMessage,
+            canRetry = state.canRetry,
+            onRetry = { viewModel.loadPoetDetail(poetId); viewModel.loadLifeEvents(poetId) },
+            modifier = Modifier.padding(padding),
+        )
         state.selectedPoet?.let { poet ->
             Column(
                 modifier = Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),

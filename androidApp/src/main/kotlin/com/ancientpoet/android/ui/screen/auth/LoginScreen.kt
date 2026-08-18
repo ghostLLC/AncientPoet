@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.theme.*
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -108,10 +109,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit, viewModel: LoginViewModel = koinView
             ) {
                 Text("登录", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = VermilionRed)
             }
-            if (state.error != null) {
-                Spacer(Modifier.height(12.dp))
-                Text(state.error!!, color = ErrorColor, fontSize = 13.sp)
-            }
         }
+        ApiErrorBanner(
+            message = state.errorMessage,
+            canRetry = state.canRetry,
+            onRetry = { if (codeSent) viewModel.verifySms(phone, code) else viewModel.sendSms(phone) },
+        )
     }
 }

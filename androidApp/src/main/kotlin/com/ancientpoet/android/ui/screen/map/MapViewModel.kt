@@ -2,62 +2,67 @@ package com.ancientpoet.android.ui.screen.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
+import com.ancientpoet.shared.data.api.AncientPoetApi
+import com.ancientpoet.shared.data.api.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-class MapViewModel(private val client: HttpClient) : ViewModel() {
+class MapViewModel(private val api: AncientPoetApi) : ViewModel() {
     private val _state = MutableStateFlow(MapState())
     val state: StateFlow<MapState> = _state
 
     fun loadMapData(dynastyId: String = "tang") {
         viewModelScope.launch {
-            try {
-                val cities: List<CityRes> = client.get("http://10.0.2.2:8080/api/v1/map/$dynastyId/cities").body()
-                _state.value = _state.value.copy(
+            setLoading()
+            when (val result = api.get<List<CityRes>>("map/$dynastyId/cities")) {
+                is ApiResult.Success -> _state.value = _state.value.copy(
                     selectedDynasty = dynastyId,
-                    cities = cities.map { CityItem(it.name, it.lat, it.lng, it.mapX, it.mapY, it.isCapital) }
+                    cities = result.value.map { CityItem(it.name, it.lat, it.lng, it.mapX, it.mapY, it.isCapital) },
+                    isLoading = false,
+                    errorMessage = null,
                 )
-            } catch (_: Exception) {}
+                is ApiResult.Failure -> setFailure(result)
+            }
         }
     }
 
     fun loadUserStatus(dynastyId: String, userId: Long = 1) {
         viewModelScope.launch {
-            try {
-                val status: MovementRes = client.get("http://10.0.2.2:8080/api/v1/user/location/$dynastyId/status").body()
-                _state.value = _state.value.copy(
-                    userLocation = LocationInfo(status.currentName, status.currentLat, status.currentLng),
-                    userStatus = status.status,
-                    movingTo = status.movingToName?.let { LocationInfo(it, status.movingToLat ?: 0.0, status.movingToLng ?: 0.0) },
-                    remainingSeconds = status.remainingSeconds,
-                    poetLocation = _state.value.poetLocation, // keep poet loc
-                )
-            } catch (_: Exception) {}
+            setLoading()
+            when (val result = api.get<MovementRes>("user/location/$dynastyId/status")) {
+                is ApiResult.Success -> {
+                    val status = result.value
+                    _state.value = _state.value.copy(
+                        userLocation = LocationInfo(status.currentName, status.currentLat, status.currentLng),
+                        userStatus = status.status,
+                        movingTo = status.movingToName?.let { LocationInfo(it, status.movingToLat ?: 0.0, status.movingToLng ?: 0.0) },
+                        remainingSeconds = status.remainingSeconds,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+                is ApiResult.Failure -> setFailure(result)
+            }
         }
     }
 
     fun moveTo(dynastyId: String, city: CityItem) {
         viewModelScope.launch {
-            try {
-                client.post("http://10.0.2.2:8080/api/v1/user/location/$dynastyId/move") {
-                    contentType(ContentType.Application.Json)
-                    setBody(MoveReq(city.name, city.lat, city.lng))
+            setLoading()
+            when (val result = api.post<MessageResponse>("user/location/$dynastyId/move", MoveReq(city.name, city.lat, city.lng))) {
+                is ApiResult.Success -> {
+                    _state.value = _state.value.copy(isLoading = false, errorMessage = null)
+                    loadUserStatus(dynastyId)
                 }
-                loadUserStatus(dynastyId)
-            } catch (_: Exception) {}
+                is ApiResult.Failure -> setFailure(result)
+            }
         }
     }
 
     fun selectCity(city: CityItem) {
         _state.value = _state.value.copy(selectedCity = city)
-        // Calculate distance/delay to poet
         val poet = _state.value.poetLocation
         if (poet != null) {
             val dist = haversine(city.lat, city.lng, poet.lat, poet.lng)
@@ -73,13 +78,21 @@ class MapViewModel(private val client: HttpClient) : ViewModel() {
         }
     }
 
+    private fun setLoading() {
+        _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
+    }
+
+    private fun setFailure(result: ApiResult.Failure) {
+        _state.value = _state.value.copy(isLoading = false, errorMessage = result.message, canRetry = result.retryable)
+    }
+
     private fun haversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
-        val R = 6371.0
+        val radius = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLng = Math.toRadians(lng2 - lng1)
         val a = Math.sin(dLat / 2).let { it * it } +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLng / 2).let { it * it }
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLng / 2).let { it * it }
+        return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     }
 
     private fun formatDelay(hours: Double): String {
@@ -105,10 +118,15 @@ data class MapState(
     val remainingSeconds: Long = 0,
     val distanceKm: Double = 0.0,
     val estimatedDelay: String = "",
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val canRetry: Boolean = false,
 )
+
 data class CityItem(val name: String, val lat: Double, val lng: Double, val mapX: Int, val mapY: Int, val isCapital: Boolean)
 data class LocationInfo(val name: String, val lat: Double, val lng: Double)
 
 @Serializable data class CityRes(val name: String, val lat: Double, val lng: Double, val mapX: Int, val mapY: Int, val isCapital: Boolean)
 @Serializable data class MoveReq(val toName: String, val toLat: Double, val toLng: Double)
 @Serializable data class MovementRes(val status: String, val currentName: String, val currentLat: Double, val currentLng: Double, val movingToName: String?, val movingToLat: Double?, val movingToLng: Double?, val remainingSeconds: Long)
+@Serializable data class MessageResponse(val message: String? = null)

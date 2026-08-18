@@ -1,32 +1,33 @@
 package com.ancientpoet.android.di
 
+import com.ancientpoet.android.data.network.HttpClientFactory
+import com.ancientpoet.android.data.session.SessionController
+import com.ancientpoet.android.data.session.SharedPreferencesSessionStore
 import com.ancientpoet.android.ui.screen.auth.LoginViewModel
+import com.ancientpoet.android.ui.screen.community.CommunityViewModel
 import com.ancientpoet.android.ui.screen.conversation.ConversationViewModel
 import com.ancientpoet.android.ui.screen.home.HomeViewModel
 import com.ancientpoet.android.ui.screen.map.MapViewModel
 import com.ancientpoet.android.ui.screen.poet.PoetViewModel
-import com.ancientpoet.android.ui.screen.community.CommunityViewModel
 import com.ancientpoet.android.ui.screen.poetry.PoetryViewModel
+import com.ancientpoet.android.ui.session.SessionViewModel
+import com.ancientpoet.shared.data.api.AncientPoetApi
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.Logging
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 object AppModule {
     val modules = module {
+        single { SharedPreferencesSessionStore(androidContext()) }
         single {
-            HttpClient {
-                install(ContentNegotiation) {
-                    json(Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true })
-                }
-                install(Logging)
-            }
+            SessionController(get<SharedPreferencesSessionStore>()) { get<HttpClient>() }
         }
+        single<HttpClient> { HttpClientFactory.create(get()) }
+        single { AncientPoetApi(get()) }
 
-        viewModel { LoginViewModel(get()) }
+        viewModel { SessionViewModel(get()) }
+        viewModel { LoginViewModel(get(), get()) }
         viewModel { HomeViewModel(get()) }
         viewModel { PoetViewModel(get()) }
         viewModel { ConversationViewModel(get()) }

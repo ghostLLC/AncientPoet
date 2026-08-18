@@ -23,19 +23,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.component.DrawingCanvasDialog
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import com.ancientpoet.android.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationScreen(conversationId: Long, onBack: () -> Unit, viewModel: ConversationViewModel = koinViewModel()) {
+fun ConversationScreen(conversationId: Long, onBack: () -> Unit, initialYear: Int? = null, viewModel: ConversationViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
     var showDrawing by remember { mutableStateOf(false) }
     var showYearPicker by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    LaunchedEffect(conversationId) { viewModel.loadConversation(conversationId); viewModel.loadMessages(conversationId) }
+    LaunchedEffect(conversationId, initialYear) {
+        viewModel.loadConversation(conversationId)
+        viewModel.loadMessages(conversationId)
+        initialYear?.let { viewModel.jumpToYear(conversationId, it) }
+    }
     LaunchedEffect(state.messages.size) { if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.size - 1) }
 
     Scaffold(
@@ -161,6 +166,11 @@ fun ConversationScreen(conversationId: Long, onBack: () -> Unit, viewModel: Conv
         ) {
             // Poet header — centered name with dynasty/year context
             item {
+                ApiErrorBanner(
+                    message = state.errorMessage,
+                    canRetry = state.canRetry,
+                    onRetry = { viewModel.loadMessages(conversationId); viewModel.loadConversation(conversationId) },
+                )
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,

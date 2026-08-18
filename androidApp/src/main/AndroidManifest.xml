@@ -8,6 +8,8 @@
     <application
         android:name=".AncientPoetApp"
         android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="鸿雁"
         android:supportsRtl="true"
         android:theme="@style/Theme.AncientPoet"

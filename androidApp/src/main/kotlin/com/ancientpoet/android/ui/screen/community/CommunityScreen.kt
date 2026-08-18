@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.theme.*
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +42,12 @@ fun CommunityScreen(
             )
         },
     ) { padding ->
+        ApiErrorBanner(
+            message = state.errorMessage,
+            canRetry = state.canRetry,
+            onRetry = viewModel::loadPosts,
+            modifier = Modifier.padding(padding),
+        )
         if (state.posts.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -145,6 +152,12 @@ fun PostDetailScreen(
             }
         },
     ) { padding ->
+        ApiErrorBanner(
+            message = state.errorMessage,
+            canRetry = state.canRetry,
+            onRetry = { viewModel.loadComments(postId) },
+            modifier = Modifier.padding(padding),
+        )
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
             items(state.comments) { comment ->
                 Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), colors = CardDefaults.cardColors(containerColor = RicePaper), shape = RoundedCornerShape(4.dp)) {

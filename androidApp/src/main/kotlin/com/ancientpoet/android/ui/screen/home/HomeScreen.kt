@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.component.LetterCard
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import com.ancientpoet.android.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
 
@@ -58,6 +59,16 @@ fun HomeScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(RicePaper)) {
+            ApiErrorBanner(
+                message = state.errorMessage,
+                canRetry = state.canRetry,
+                onRetry = viewModel::loadConversations,
+            )
+            if (state.isLoading && state.conversations.isEmpty()) {
+                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = VermilionRed)
+                }
+            }
             // Quick nav row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),

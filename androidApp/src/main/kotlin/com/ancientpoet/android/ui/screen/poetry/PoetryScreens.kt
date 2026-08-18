@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.theme.*
+import com.ancientpoet.android.ui.component.ApiErrorBanner
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +50,11 @@ fun PoetryListScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            ApiErrorBanner(
+                message = state.errorMessage,
+                canRetry = state.canRetry,
+                onRetry = { if (poetId != null) viewModel.loadPoetPoems(poetId) else viewModel.searchPoems(searchQuery) },
+            )
             OutlinedTextField(
                 value = searchQuery, onValueChange = { searchQuery = it; viewModel.searchPoems(it) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -104,6 +110,12 @@ fun PoetryDetailScreen(poemId: Long, onBack: () -> Unit, viewModel: PoetryViewMo
             )
         },
     ) { padding ->
+        ApiErrorBanner(
+            message = state.errorMessage,
+            canRetry = state.canRetry,
+            onRetry = { viewModel.loadPoemDetail(poemId) },
+            modifier = Modifier.padding(padding),
+        )
         state.selectedPoem?.let { poem ->
             Column(
                 modifier = Modifier.padding(padding).padding(24.dp).fillMaxSize().verticalScroll(rememberScrollState()),
