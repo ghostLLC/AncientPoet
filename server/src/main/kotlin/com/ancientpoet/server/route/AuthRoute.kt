@@ -7,10 +7,8 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
-import org.koin.ktor.ext.inject
 
-fun Route.authRoute() {
-    val authService: AuthService by inject()
+fun Route.authRoute(authService: AuthService) {
 
     post("/auth/sms/send") {
         val request = call.receive<SmsSendRequest>()

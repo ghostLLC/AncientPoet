@@ -2,6 +2,7 @@ package com.ancientpoet.server.push
 
 import com.ancientpoet.server.config.AppConfig
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.Json
 import java.util.Base64
 
 class JPushClient(private val config: AppConfig) {
-    private val client = HttpClient()
+    private val client = HttpClient(OkHttp)
     private val json = Json { encodeDefaults = false }
     private val pushUrl = "https://api.jpush.cn/v3/push"
 

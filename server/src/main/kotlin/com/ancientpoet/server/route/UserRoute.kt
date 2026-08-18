@@ -11,10 +11,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.put
-import org.koin.ktor.ext.inject
 
-fun Route.userRoute() {
-    val userService: UserService by inject()
+fun Route.userRoute(userService: UserService) {
 
     authenticate("auth-jwt") {
         get("/user/profile") {

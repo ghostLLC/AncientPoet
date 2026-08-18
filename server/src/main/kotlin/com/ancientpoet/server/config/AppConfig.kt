@@ -45,7 +45,7 @@ data class AppConfig(
             postgresPassword = env("POSTGRES_PASSWORD", "changeme"),
             redisHost = env("REDIS_HOST", "localhost"),
             redisPort = envInt("REDIS_PORT", 6379),
-            redisPassword = env("REDIS_PASSWORD", null),
+            redisPassword = optionalEnv("REDIS_PASSWORD"),
             minioEndpoint = env("MINIO_ENDPOINT", "http://localhost:9000"),
             minioAccessKey = env("MINIO_ACCESS_KEY", "minioadmin"),
             minioSecretKey = env("MINIO_SECRET_KEY", "minioadmin"),
@@ -72,6 +72,9 @@ data class AppConfig(
 
         private fun env(key: String, default: String?): String =
             System.getenv(key) ?: default ?: throw IllegalStateException("Missing env var: $key")
+
+        private fun optionalEnv(key: String): String? =
+            System.getenv(key)?.takeIf { it.isNotBlank() }
 
         private fun envInt(key: String, default: Int): Int =
             System.getenv(key)?.toIntOrNull() ?: default

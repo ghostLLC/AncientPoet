@@ -8,11 +8,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
-import org.koin.ktor.ext.inject
 import java.util.UUID
 
-fun Route.uploadRoute() {
-    val config: AppConfig by inject()
+fun Route.uploadRoute(config: AppConfig) {
     val minio = MinioClient.builder().endpoint(config.minioEndpoint).credentials(config.minioAccessKey, config.minioSecretKey).build()
 
     authenticate("auth-jwt") {

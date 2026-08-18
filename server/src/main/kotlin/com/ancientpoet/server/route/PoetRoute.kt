@@ -7,11 +7,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
-import org.koin.ktor.ext.inject
 
-fun Route.poetRoute() {
-    val poetRepository: PoetRepository by inject()
-    val poetLocationService: PoetLocationService by inject()
+fun Route.poetRoute(
+    poetRepository: PoetRepository,
+    poetLocationService: PoetLocationService,
+) {
 
     get("/poets") {
         val poets = poetRepository.findAll()

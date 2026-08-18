@@ -10,6 +10,7 @@ object DatabaseConfig {
         val url = "jdbc:postgresql://${config.postgresHost}:${config.postgresPort}/${config.postgresDb}"
         val flyway = Flyway.configure()
             .dataSource(url, config.postgresUser, config.postgresPassword)
+            .validateMigrationNaming(true)
             .load()
         flyway.migrate()
         this.flyway = flyway

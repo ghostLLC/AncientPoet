@@ -11,10 +11,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
-import org.koin.ktor.ext.inject
 
-fun Route.messageRoute() {
-    val messageService: MessageService by inject()
+fun Route.messageRoute(messageService: MessageService) {
 
     authenticate("auth-jwt") {
         post("/conversations/{id}/messages") {

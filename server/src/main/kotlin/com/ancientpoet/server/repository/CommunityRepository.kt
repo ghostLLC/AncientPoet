@@ -22,7 +22,11 @@ class CommunityRepository {
 
     suspend fun getPosts(page: Int = 0, pageSize: Int = 20): List<PostRow> = withContext(Dispatchers.IO) {
         transaction {
-            CommunityPostsTable.innerJoin(UsersTable).selectAll()
+            CommunityPostsTable.join(
+                UsersTable,
+                JoinType.INNER,
+                additionalConstraint = { CommunityPostsTable.userId eq UsersTable.id },
+            ).selectAll()
                 .orderBy(CommunityPostsTable.createdAt, SortOrder.DESC)
                 .limit(pageSize).offset((page * pageSize).toLong())
                 .map { PostRow(it[CommunityPostsTable.id], it[CommunityPostsTable.userId], it[UsersTable.nickname] ?: "", it[CommunityPostsTable.contentText], it[CommunityPostsTable.type], it[CommunityPostsTable.likeCount], it[CommunityPostsTable.commentCount]) }
@@ -50,7 +54,11 @@ class CommunityRepository {
 
     suspend fun getComments(postId: Long): List<CommentRow> = withContext(Dispatchers.IO) {
         transaction {
-            CommunityCommentsTable.innerJoin(UsersTable).selectAll()
+            CommunityCommentsTable.join(
+                UsersTable,
+                JoinType.INNER,
+                additionalConstraint = { CommunityCommentsTable.userId eq UsersTable.id },
+            ).selectAll()
                 .where { CommunityCommentsTable.postId eq postId }
                 .orderBy(CommunityCommentsTable.createdAt)
                 .map { CommentRow(it[CommunityCommentsTable.id], it[CommunityCommentsTable.userId], it[UsersTable.nickname] ?: "", it[CommunityCommentsTable.content], it[CommunityCommentsTable.replyToCommentId]) }

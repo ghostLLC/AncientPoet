@@ -14,13 +14,13 @@ class PoetRepository {
 
     suspend fun findAll(): List<Poet> = withContext(Dispatchers.IO) {
         transaction {
-            PoetsTable.innerJoin(DynastiesTable).selectAll().orderBy(PoetsTable.id).map { it.toPoet() }
+            poetsWithDynasties().selectAll().orderBy(PoetsTable.id).map { it.toPoet() }
         }
     }
 
     suspend fun findById(poetId: Long): Poet? = withContext(Dispatchers.IO) {
         transaction {
-            PoetsTable.innerJoin(DynastiesTable).selectAll().where { PoetsTable.id eq poetId }.singleOrNull()?.toPoet()
+            poetsWithDynasties().selectAll().where { PoetsTable.id eq poetId }.singleOrNull()?.toPoet()
         }
     }
 
@@ -39,6 +39,12 @@ class PoetRepository {
     suspend fun findLifeEventsByPoetId(poetId: Long): List<PoetLifeEvent> = withContext(Dispatchers.IO) {
         transaction { PoetLifeEventsTable.selectAll().where { PoetLifeEventsTable.poetId eq poetId }.orderBy(PoetLifeEventsTable.year).map { it.toLifeEvent() } }
     }
+
+    private fun poetsWithDynasties(): Join = PoetsTable.join(
+        otherTable = DynastiesTable,
+        joinType = JoinType.INNER,
+        additionalConstraint = { PoetsTable.dynastyId eq DynastiesTable.id },
+    )
 
     private fun org.jetbrains.exposed.sql.ResultRow.toPoet(): Poet = Poet(
         id = this[PoetsTable.id], name = this[PoetsTable.name], courtesyName = this[PoetsTable.courtesyName],

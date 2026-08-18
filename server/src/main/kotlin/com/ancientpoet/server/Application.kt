@@ -12,6 +12,7 @@ import com.ancientpoet.server.plugin.configureStatusPages
 import com.ancientpoet.server.route.authRoute
 import com.ancientpoet.server.route.communityRoute
 import com.ancientpoet.server.route.conversationRoute
+import com.ancientpoet.server.route.healthRoute
 import com.ancientpoet.server.route.mapRoute
 import com.ancientpoet.server.route.messageRoute
 import com.ancientpoet.server.route.movementRoute
@@ -21,16 +22,15 @@ import com.ancientpoet.server.route.storylineRoute
 import com.ancientpoet.server.route.uploadRoute
 import com.ancientpoet.server.route.userRoute
 import com.ancientpoet.server.scheduler.MessageDeliveryScheduler
+import com.ancientpoet.server.service.ReadinessChecker
 import io.ktor.server.application.Application
-import io.ktor.server.application.install
+import io.ktor.server.application.ApplicationStarted
+import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import org.koin.ktor.ext.getKoin
-import org.koin.ktor.plugin.Koin
-import org.koin.ktor.plugin.KoinApplicationStarted
-import org.koin.ktor.plugin.KoinApplicationStopPreparing
+import org.koin.core.context.startKoin
 
 fun main() {
     val appConfig = AppConfig.fromEnvironment()
@@ -43,9 +43,10 @@ fun Application.module(appConfig: AppConfig) {
     DatabaseConfig.init(appConfig)
     RedisConfig.init(appConfig)
 
-    install(Koin) {
+    val koinApplication = startKoin {
         modules(ServerModule.module(appConfig))
     }
+    val koin = koinApplication.koin
 
     configureSerialization()
     configureAuthentication(appConfig)
@@ -53,28 +54,31 @@ fun Application.module(appConfig: AppConfig) {
     configureRateLimit()
     configureStatusPages()
 
+    val readinessChecker: ReadinessChecker = koin.get()
     routing {
         route("/api/v1") {
-            authRoute()
-            userRoute()
-            poetRoute()
-            conversationRoute()
-            messageRoute()
-            storylineRoute()
-            movementRoute()
+            healthRoute(readinessChecker)
+            authRoute(koin.get())
+            userRoute(koin.get())
+            poetRoute(koin.get(), koin.get())
+            conversationRoute(koin.get(), koin.get(), koin.get(), koin.get())
+            messageRoute(koin.get())
+            storylineRoute(koin.get(), koin.get())
+            movementRoute(koin.get())
             mapRoute()
-            poemRoute()
-            uploadRoute()
-            communityRoute()
+            poemRoute(koin.get())
+            uploadRoute(appConfig)
+            communityRoute(koin.get())
         }
     }
 
-    monitor.subscribe(KoinApplicationStarted) {
-        val scheduler: MessageDeliveryScheduler = getKoin().get()
+    monitor.subscribe(ApplicationStarted) {
+        val scheduler: MessageDeliveryScheduler = koin.get()
         scheduler.start()
     }
 
-    monitor.subscribe(KoinApplicationStopPreparing) {
+    monitor.subscribe(ApplicationStopPreparing) {
         DatabaseConfig.shutdown()
+        koinApplication.close()
     }
 }

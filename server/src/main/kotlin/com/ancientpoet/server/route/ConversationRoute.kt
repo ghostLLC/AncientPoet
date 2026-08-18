@@ -15,13 +15,13 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
-import org.koin.ktor.ext.inject
 
-fun Route.conversationRoute() {
-    val conversationService: ConversationService by inject()
-    val poetRepository: PoetRepository by inject()
-    val poetLocationService: PoetLocationService by inject()
-    val userService: UserService by inject()
+fun Route.conversationRoute(
+    conversationService: ConversationService,
+    poetRepository: PoetRepository,
+    poetLocationService: PoetLocationService,
+    userService: UserService,
+) {
 
     authenticate("auth-jwt") {
         post("/conversations") {

@@ -11,10 +11,8 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import kotlinx.serialization.Serializable
-import org.koin.ktor.ext.inject
 
-fun Route.movementRoute() {
-    val movementService: MovementService by inject()
+fun Route.movementRoute(movementService: MovementService) {
 
     authenticate("auth-jwt") {
         post("/user/location/{dynastyId}/move") {

@@ -5,10 +5,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
-import org.koin.ktor.ext.inject
 
-fun Route.poemRoute() {
-    val poetRepository: PoetRepository by inject()
+fun Route.poemRoute(poetRepository: PoetRepository) {
 
     get("/poems/search") {
         val query = call.request.queryParameters["q"] ?: ""

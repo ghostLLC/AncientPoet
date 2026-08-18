@@ -13,11 +13,11 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import kotlinx.serialization.Serializable
-import org.koin.ktor.ext.inject
 
-fun Route.storylineRoute() {
-    val storylineService: StorylineService by inject()
-    val conversationService: ConversationService by inject()
+fun Route.storylineRoute(
+    storylineService: StorylineService,
+    conversationService: ConversationService,
+) {
 
     authenticate("auth-jwt") {
         get("/conversations/{id}/storyline/state") {

@@ -99,7 +99,6 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

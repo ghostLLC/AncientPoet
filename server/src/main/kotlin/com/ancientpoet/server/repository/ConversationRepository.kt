@@ -33,7 +33,7 @@ class ConversationRepository {
 
     suspend fun findByUserId(userId: Long): List<Conversation> = withContext(Dispatchers.IO) {
         transaction {
-            ConversationsTable.innerJoin(PoetsTable).selectAll()
+            conversationsWithPoets().selectAll()
                 .where { ConversationsTable.userId eq userId }
                 .orderBy(ConversationsTable.createdAt, SortOrder.DESC)
                 .map { it.toConversation() }
@@ -48,8 +48,14 @@ class ConversationRepository {
         withContext(Dispatchers.IO) { transaction { ConversationsTable.deleteWhere { ConversationsTable.id eq conversationId } } }
     }
 
-    private fun findByIdInternal(id: Long): Conversation? = ConversationsTable.innerJoin(PoetsTable).selectAll()
+    private fun findByIdInternal(id: Long): Conversation? = conversationsWithPoets().selectAll()
         .where { ConversationsTable.id eq id }.singleOrNull()?.toConversation()
+
+    private fun conversationsWithPoets(): Join = ConversationsTable.join(
+        otherTable = PoetsTable,
+        joinType = JoinType.INNER,
+        additionalConstraint = { ConversationsTable.poetId eq PoetsTable.id },
+    )
 
     private fun org.jetbrains.exposed.sql.ResultRow.toConversation() = Conversation(
         id = this[ConversationsTable.id], userId = this[ConversationsTable.userId],

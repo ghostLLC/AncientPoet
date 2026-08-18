@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -28,6 +30,8 @@ dependencies {
     implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
 
     // Exposed
     implementation(libs.exposed.core)
@@ -51,7 +55,6 @@ dependencies {
 
     // Koin DI
     implementation(libs.koin.core)
-    implementation(libs.koin.ktor)
 
     // Kotlin
     implementation(libs.kotlinx.coroutines.core)
@@ -68,10 +71,13 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.ktor.server.tests)
     testImplementation(libs.koin.test)
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.withType<ShadowJar>().configureEach {
+    mergeServiceFiles()
 }

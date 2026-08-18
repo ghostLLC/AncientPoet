@@ -9,10 +9,8 @@ import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
-import org.koin.ktor.ext.inject
 
-fun Route.communityRoute() {
-    val service: CommunityService by inject()
+fun Route.communityRoute(service: CommunityService) {
 
     authenticate("auth-jwt") {
         get("/community/posts") {

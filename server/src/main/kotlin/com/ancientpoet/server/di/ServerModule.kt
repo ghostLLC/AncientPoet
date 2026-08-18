@@ -43,8 +43,23 @@ object ServerModule {
         single { StorylineService(get(), get(), get()) }
         single { MovementService(get()) }
         single { ConversationService(get(), get(), get()) }
-        single { MessageService(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+        single {
+            MessageService(
+                messageRepo = get(),
+                conversationRepo = get(),
+                poetRepo = get(),
+                userRepo = get(),
+                deepSeekClient = get(),
+                translationService = get(),
+                contextManager = get(),
+                deliveryScheduler = get(),
+                poetLocationService = get(),
+                storylineService = get(),
+                movementService = get(),
+            )
+        }
         single { CommunityRepository() }
         single { CommunityService(get(), get()) }
+        single<ReadinessChecker> { InfrastructureReadinessChecker(get()) }
     }
 }
