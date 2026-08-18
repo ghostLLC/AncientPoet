@@ -1,24 +1,23 @@
 package com.ancientpoet.android.ui.screen.auth
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-class LoginViewModel(private val client: HttpClient) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+class LoginViewModel(private val client: HttpClient) : ViewModel() {
     private val _state = MutableStateFlow(LoginState())
     val state: StateFlow<LoginState> = _state
 
     fun sendSms(phone: String) {
-        scope.launch {
+        viewModelScope.launch {
             try {
                 client.post("http://10.0.2.2:8080/api/v1/auth/sms/send") {
                     contentType(ContentType.Application.Json)
@@ -31,7 +30,7 @@ class LoginViewModel(private val client: HttpClient) {
     }
 
     fun verifySms(phone: String, code: String) {
-        scope.launch {
+        viewModelScope.launch {
             try {
                 val response: VerifyResponse = client.post("http://10.0.2.2:8080/api/v1/auth/sms/verify") {
                     contentType(ContentType.Application.Json)

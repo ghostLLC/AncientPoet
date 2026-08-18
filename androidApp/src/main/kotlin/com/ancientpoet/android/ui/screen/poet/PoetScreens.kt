@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,7 +25,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PoetListScreen(onPoetClick: (Long) -> Unit, onBack: () -> Unit, viewModel: PoetViewModel = koinViewModel()) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.loadPoets() }
 
     Scaffold(
@@ -58,7 +59,7 @@ fun PoetListScreen(onPoetClick: (Long) -> Unit, onBack: () -> Unit, viewModel: P
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PoetDetailScreen(poetId: Long, onBack: () -> Unit, onStartConversation: (Long, Int?) -> Unit, viewModel: PoetViewModel = koinViewModel()) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedYear by remember { mutableStateOf<Int?>(null) }
     var showStorylineMode by remember { mutableStateOf(false) }
 

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,7 +28,7 @@ fun CommunityScreen(
     onProfileClick: (Long) -> Unit,
     viewModel: CommunityViewModel = koinViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.loadPosts() }
 
     Scaffold(
@@ -115,7 +116,7 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     viewModel: CommunityViewModel = koinViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var commentText by remember { mutableStateOf("") }
 
     LaunchedEffect(postId) { viewModel.loadComments(postId) }

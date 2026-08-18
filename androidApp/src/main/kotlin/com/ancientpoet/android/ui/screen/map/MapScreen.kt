@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,13 +22,14 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ancientpoet.android.ui.theme.*
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(onBack: () -> Unit, viewModel: MapViewModel = koinViewModel()) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var showDynastyMenu by remember { mutableStateOf(false) }
     val dynasties = listOf("tang" to "唐", "song" to "宋", "han" to "汉", "jin" to "晋", "ming" to "明")
 
@@ -80,26 +82,26 @@ fun MapScreen(onBack: () -> Unit, viewModel: MapViewModel = koinViewModel()) {
                 }
                 // User position with pulse
                 state.userLocation?.let { user ->
-                    val ux = (user.lng / 120.0 * w * 0.7f + w * 0.15f).coerceIn(0f, w)
-                    val uy = ((40.0 - user.lat) / 20.0 * h * 0.7f + h * 0.15f).coerceIn(0f, h)
-                    drawCircle(VermilionRed, 9f, Offset(ux, uy))
-                    drawCircle(VermilionRed.copy(alpha = 0.15f), 16f, Offset(ux, uy), style = Stroke(2f))
+                    val ux = (user.lng.toFloat() / 120f * w * 0.7f + w * 0.15f).coerceIn(0f, w)
+                    val uy = ((40f - user.lat.toFloat()) / 20f * h * 0.7f + h * 0.15f).coerceIn(0f, h)
+                    drawCircle(VermilionRed, 9f, Offset(x = ux, y = uy))
+                    drawCircle(VermilionRed.copy(alpha = 0.15f), 16f, Offset(x = ux, y = uy), style = Stroke(2f))
                 }
                 // Poet position with golden shadow
                 state.poetLocation?.let { poet ->
-                    val px = (poet.lng / 120.0 * w * 0.7f + w * 0.15f).coerceIn(0f, w)
-                    val py = ((40.0 - poet.lat) / 20.0 * h * 0.7f + h * 0.15f).coerceIn(0f, h)
-                    drawCircle(ImperialGold.copy(alpha = 0.3f), 14f, Offset(px, py))
-                    drawCircle(ImperialGold, 9f, Offset(px, py))
+                    val px = (poet.lng.toFloat() / 120f * w * 0.7f + w * 0.15f).coerceIn(0f, w)
+                    val py = ((40f - poet.lat.toFloat()) / 20f * h * 0.7f + h * 0.15f).coerceIn(0f, h)
+                    drawCircle(ImperialGold.copy(alpha = 0.3f), 14f, Offset(x = px, y = py))
+                    drawCircle(ImperialGold, 9f, Offset(x = px, y = py))
                 }
                 // Connection dash line
                 if (state.userLocation != null && state.poetLocation != null) {
                     val uLoc = state.userLocation!!; val pLoc = state.poetLocation!!
-                    val ux = (uLoc.lng / 120.0 * w * 0.7f + w * 0.15f).coerceIn(0f, w)
-                    val uy = ((40.0 - uLoc.lat) / 20.0 * h * 0.7f + h * 0.15f).coerceIn(0f, h)
-                    val px = (pLoc.lng / 120.0 * w * 0.7f + w * 0.15f).coerceIn(0f, w)
-                    val py = ((40.0 - pLoc.lat) / 20.0 * h * 0.7f + h * 0.15f).coerceIn(0f, h)
-                    drawLine(WarmGray.copy(alpha = 0.4f), Offset(ux, uy), Offset(px, py), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
+                    val ux = (uLoc.lng.toFloat() / 120f * w * 0.7f + w * 0.15f).coerceIn(0f, w)
+                    val uy = ((40f - uLoc.lat.toFloat()) / 20f * h * 0.7f + h * 0.15f).coerceIn(0f, h)
+                    val px = (pLoc.lng.toFloat() / 120f * w * 0.7f + w * 0.15f).coerceIn(0f, w)
+                    val py = ((40f - pLoc.lat.toFloat()) / 20f * h * 0.7f + h * 0.15f).coerceIn(0f, h)
+                    drawLine(WarmGray.copy(alpha = 0.4f), Offset(x = ux, y = uy), Offset(x = px, y = py), 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
                 }
             }
 

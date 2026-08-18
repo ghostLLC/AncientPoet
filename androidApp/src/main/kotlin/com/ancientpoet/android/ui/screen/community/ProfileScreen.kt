@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -21,7 +22,7 @@ fun ProfileScreen(
     onBack: () -> Unit,
     viewModel: CommunityViewModel = koinViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(userId) { viewModel.loadProfile(userId) }
 
     Scaffold(
@@ -47,8 +48,8 @@ fun ProfileScreen(
             }
             // Name
             Text(state.profileName ?: "匿名", fontFamily = SerifFont, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = InkBlack)
-            if (state.profileBio != null) {
-                Text(state.profileBio, fontFamily = SerifFont, fontSize = 15.sp, color = WarmGray)
+            state.profileBio?.let { bio ->
+                Text(bio, fontFamily = SerifFont, fontSize = 15.sp, color = WarmGray)
             }
             // Stats
             Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +29,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationScreen(conversationId: Long, onBack: () -> Unit, viewModel: ConversationViewModel = koinViewModel()) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
     var showDrawing by remember { mutableStateOf(false) }
     var showYearPicker by remember { mutableStateOf(false) }

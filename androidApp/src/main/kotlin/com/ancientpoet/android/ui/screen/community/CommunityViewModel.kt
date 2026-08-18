@@ -1,25 +1,24 @@
 package com.ancientpoet.android.ui.screen.community
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-class CommunityViewModel(private val client: HttpClient) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+class CommunityViewModel(private val client: HttpClient) : ViewModel() {
     private val _state = MutableStateFlow(CommunityState())
     val state: StateFlow<CommunityState> = _state
     private val base = "http://10.0.2.2:8080/api/v1"
 
     fun loadPosts() {
-        scope.launch {
+        viewModelScope.launch {
             try {
                 val res: PostListRes = client.get("$base/community/posts").body()
                 _state.value = _state.value.copy(posts = res.posts.map { PostItem(it.id, it.userId, it.userNickname, it.contentText, it.sharedMessageIds, it.likeCount, it.commentCount, it.isLiked) })
@@ -28,7 +27,7 @@ class CommunityViewModel(private val client: HttpClient) {
     }
 
     fun toggleLike(postId: Long) {
-        scope.launch {
+        viewModelScope.launch {
             try {
                 client.post("$base/community/posts/$postId/like")
                 loadPosts()
@@ -37,7 +36,7 @@ class CommunityViewModel(private val client: HttpClient) {
     }
 
     fun loadComments(postId: Long) {
-        scope.launch {
+        viewModelScope.launch {
             try {
                 val comments: List<CommentRes> = client.get("$base/community/posts/$postId/comments").body()
                 _state.value = _state.value.copy(comments = comments.map { CommentItem(it.id, it.userId, it.userNickname, it.content) })
@@ -47,17 +46,15 @@ class CommunityViewModel(private val client: HttpClient) {
 
     fun addComment(postId: Long, content: String) {
         if (content.isBlank()) return
-        scope.launch {
+        viewModelScope.launch {
             try {
                 client.post("$base/community/posts/$postId/comments") { contentType(ContentType.Application.Json); setBody(CommentReq(content)) }
                 loadComments(postId)
             } catch (_: Exception) {}
         }
     }
-}
-
     fun loadProfile(userId: Long) {
-        scope.launch {
+        viewModelScope.launch {
             try {
                 val p: ProfileRes = client.get("$base/user/profile/$userId").body()
                 _state.value = _state.value.copy(profileName = p.nickname, profileBio = p.bio, postCount = p.postCount)
