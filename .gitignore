@@ -46,3 +46,6 @@ firebase-credentials.json
 # Logs
 *.log
 logs/
+
+# Isolated Codex worktrees
+.worktrees/
