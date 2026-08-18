@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ancientpoet.shared.data.api.AncientPoetApi
 import com.ancientpoet.shared.data.api.ApiResult
+import io.ktor.client.request.setBody
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,6 +13,7 @@ import kotlinx.serialization.Serializable
 class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
     private val _state = MutableStateFlow(ConversationState())
     val state: StateFlow<ConversationState> = _state
+    private var pendingRetry: PendingRetry? = null
 
     fun loadConversation(conversationId: Long) {
         viewModelScope.launch { loadConversationInternal(conversationId) }
@@ -29,33 +31,18 @@ class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
         }
     }
 
-    fun retryInitialLoad(conversationId: Long) {
+    fun retry(conversationId: Long) {
         viewModelScope.launch {
-            val current = _state.value
-            if (current.conversationError?.retryable == true) {
-                loadConversationInternal(conversationId)
-            }
-            if (current.messagesError?.retryable == true) {
-                loadMessagesInternal(conversationId)
+            when (val action = pendingRetry) {
+                is PendingRetry.Send -> sendMessageInternal(conversationId, action.text, action.imageUrl)
+                is PendingRetry.Jump -> jumpToYearInternal(conversationId, action.year)
+                null -> retryInitialLoadInternal(conversationId)
             }
         }
     }
 
     fun sendMessage(conversationId: Long, text: String, imageUrl: String? = null) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isSending = true, actionError = null)
-            when (val result = api.post<MessageResponse>("conversations/$conversationId/messages", SendReq(text.ifBlank { null }, imageUrl))) {
-                is ApiResult.Success -> {
-                    _state.value = _state.value.copy(isSending = false)
-                    loadMessagesInternal(conversationId)
-                    loadConversationInternal(conversationId)
-                }
-                is ApiResult.Failure -> _state.value = _state.value.copy(
-                    isSending = false,
-                    actionError = OperationError(result.message, result.retryable),
-                )
-            }
-        }
+        viewModelScope.launch { sendMessageInternal(conversationId, text, imageUrl) }
     }
 
     fun jumpToYear(conversationId: Long, year: Int) {
@@ -64,14 +51,48 @@ class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
 
     fun createConversation(poetId: Long, year: Int, onCreated: (Long) -> Unit) {
         viewModelScope.launch {
+            pendingRetry = null
             beginAction()
             val backgroundSetting = year.takeIf { it != 0 }?.let { "storylineYear=$it" }
-            when (val result = api.post<ConversationCreatedResponse>("conversations", CreateConversationRequest(poetId, backgroundSetting = backgroundSetting))) {
+            when (val result = api.post<ConversationCreatedResponse>("conversations") {
+                setBody(CreateConversationRequest(poetId, backgroundSetting = backgroundSetting))
+            }) {
                 is ApiResult.Success -> {
                     _state.value = _state.value.copy(isLoading = false, actionError = null)
                     onCreated(result.value.id)
                 }
                 is ApiResult.Failure -> setActionFailure(result)
+            }
+        }
+    }
+
+    private suspend fun retryInitialLoadInternal(conversationId: Long) {
+        val current = _state.value
+        if (current.conversationError?.retryable == true) {
+            loadConversationInternal(conversationId)
+        }
+        if (current.messagesError?.retryable == true) {
+            loadMessagesInternal(conversationId)
+        }
+    }
+
+    private suspend fun sendMessageInternal(conversationId: Long, text: String, imageUrl: String?) {
+        pendingRetry = null
+        _state.value = _state.value.copy(isSending = true, actionError = null)
+        when (val result = api.post<MessageResponse>("conversations/$conversationId/messages") {
+            setBody(SendReq(text.ifBlank { null }, imageUrl))
+        }) {
+            is ApiResult.Success -> {
+                _state.value = _state.value.copy(isSending = false)
+                loadMessagesInternal(conversationId)
+                loadConversationInternal(conversationId)
+            }
+            is ApiResult.Failure -> {
+                if (result.retryable) pendingRetry = PendingRetry.Send(text, imageUrl)
+                _state.value = _state.value.copy(
+                    isSending = false,
+                    actionError = OperationError(result.message, result.retryable),
+                )
             }
         }
     }
@@ -104,8 +125,11 @@ class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
     }
 
     private suspend fun jumpToYearInternal(conversationId: Long, year: Int) {
+        pendingRetry = null
         beginAction()
-        when (val result = api.post<StorylineRes>("conversations/$conversationId/storyline/jump", JumpReq(year))) {
+        when (val result = api.post<StorylineRes>("conversations/$conversationId/storyline/jump") {
+            setBody(JumpReq(year))
+        }) {
             is ApiResult.Success -> {
                 val sl = result.value
                 _state.value = _state.value.copy(
@@ -115,6 +139,9 @@ class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
                 )
             }
             is ApiResult.Failure -> setActionFailure(result)
+        }
+        if (_state.value.actionError?.retryable == true) {
+            pendingRetry = PendingRetry.Jump(year)
         }
     }
 
@@ -141,6 +168,11 @@ class ConversationViewModel(private val api: AncientPoetApi) : ViewModel() {
     private fun setActionFailure(result: ApiResult.Failure) {
         _state.value = _state.value.copy(isLoading = false, actionError = OperationError(result.message, result.retryable))
     }
+}
+
+private sealed interface PendingRetry {
+    data class Send(val text: String, val imageUrl: String?) : PendingRetry
+    data class Jump(val year: Int) : PendingRetry
 }
 
 data class ConversationState(

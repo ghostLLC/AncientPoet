@@ -191,6 +191,93 @@ class AuthClientTest {
     }
 
     @Test
+    fun logoutAfterRefreshCallbackAppliedCannotReuseCachedBearerOnNextRequest() = runTest {
+        val store = InMemorySessionStore(AuthTokens("access-old", "refresh-old", 7))
+        val callbackReached = CompletableDeferred<Unit>()
+        val releaseCallback = CompletableDeferred<Unit>()
+        val protectedHeaders = mutableListOf<String?>()
+        var protectedRequests = 0
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath.endsWith("/auth/refresh")) {
+                respondJson("""{"accessToken":"access-refreshed"}""")
+            } else {
+                protectedRequests++
+                protectedHeaders += request.headers[HttpHeaders.Authorization]
+                if (protectedRequests == 1) {
+                    respondError(HttpStatusCode.Unauthorized)
+                } else {
+                    respondJson("""{"value":"ok"}""")
+                }
+            }
+        }
+        val controller = SessionController(store)
+        val client = HttpClientFactory.create(
+            sessionController = controller,
+            engine = engine,
+            refreshReturnHook = {
+                callbackReached.complete(Unit)
+                releaseCallback.await()
+            },
+        )
+        val api = AncientPoetApi(client)
+        val call = async { api.get<TestPayload>("protected") }
+
+        callbackReached.await()
+        controller.logout()
+        assertNull(store.value)
+        releaseCallback.complete(Unit)
+
+        assertIs<ApiResult.Success<TestPayload>>(call.await())
+        assertIs<ApiResult.Success<TestPayload>>(api.get<TestPayload>("protected-again"))
+        assertEquals(listOf("Bearer access-old", null, null), protectedHeaders)
+        assertNull(store.value)
+        client.close()
+    }
+
+    @Test
+    fun newSessionSavedDuringRefreshWinsAtTheOutgoingHeaderGuard() = runTest {
+        val oldTokens = AuthTokens("access-old", "refresh-old", 7)
+        val newTokens = AuthTokens("access-new-session", "refresh-new-session", 8)
+        val store = InMemorySessionStore(oldTokens)
+        val callbackReached = CompletableDeferred<Unit>()
+        val releaseCallback = CompletableDeferred<Unit>()
+        val protectedHeaders = mutableListOf<String?>()
+        var protectedRequests = 0
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath.endsWith("/auth/refresh")) {
+                respondJson("""{"accessToken":"access-refreshed"}""")
+            } else {
+                protectedRequests++
+                protectedHeaders += request.headers[HttpHeaders.Authorization]
+                if (protectedRequests == 1) {
+                    respondError(HttpStatusCode.Unauthorized)
+                } else {
+                    respondJson("""{"value":"ok"}""")
+                }
+            }
+        }
+        val controller = SessionController(store)
+        val client = HttpClientFactory.create(
+            sessionController = controller,
+            engine = engine,
+            refreshReturnHook = {
+                callbackReached.complete(Unit)
+                releaseCallback.await()
+            },
+        )
+        val call = async { AncientPoetApi(client).get<TestPayload>("protected") }
+
+        callbackReached.await()
+        controller.save(newTokens)
+        releaseCallback.complete(Unit)
+
+        assertIs<ApiResult.Success<TestPayload>>(call.await())
+        assertEquals(listOf<String?>("Bearer access-old", "Bearer access-new-session"), protectedHeaders)
+        assertEquals(newTokens, store.value)
+        client.close()
+    }
+
+    @Test
     fun logoutClearsSessionAndBearerCache() = runTest {
         val store = InMemorySessionStore(AuthTokens("access-old", "refresh-old", 7))
         val headers = mutableListOf<String?>()

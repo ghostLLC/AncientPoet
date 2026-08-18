@@ -5,6 +5,7 @@ import com.ancientpoet.shared.auth.AuthTokens
 import com.ancientpoet.shared.auth.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -15,6 +16,7 @@ import kotlin.coroutines.coroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SessionViewModelTest {
     @Test
     fun logoutThatArrivesDuringInitialRestoreCannotBeOverwrittenByStaleLoad() = runTest {

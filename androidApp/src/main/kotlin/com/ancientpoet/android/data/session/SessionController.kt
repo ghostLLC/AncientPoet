@@ -49,6 +49,11 @@ class SessionController(
 
     suspend fun logout() = clear()
 
+    /** Makes persisted session state authoritative immediately before a protected request. */
+    suspend fun currentSessionForRequest(): AuthTokens? = mutex.withLock {
+        delegate.load().also { clearBearerCache() }
+    }
+
     /** Captures the session identity used to conditionally apply one refresh response. */
     suspend fun captureSession(): SessionSnapshot? = mutex.withLock {
         delegate.load()?.let { SessionSnapshot(generation, it) }

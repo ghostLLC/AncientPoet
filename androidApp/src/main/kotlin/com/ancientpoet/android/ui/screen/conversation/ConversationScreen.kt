@@ -167,7 +167,7 @@ fun ConversationScreen(conversationId: Long, onBack: () -> Unit, initialYear: In
                 ApiErrorBanner(
                     message = state.errorMessage,
                     canRetry = state.canRetry,
-                    onRetry = { viewModel.retryInitialLoad(conversationId) },
+                    onRetry = { viewModel.retry(conversationId) },
                 )
                 Column(
                     modifier = Modifier.fillMaxWidth(),

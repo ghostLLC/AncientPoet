@@ -6,6 +6,7 @@ import com.ancientpoet.android.data.session.SessionController
 import com.ancientpoet.shared.auth.AuthTokens
 import com.ancientpoet.shared.data.api.AncientPoetApi
 import com.ancientpoet.shared.data.api.ApiResult
+import io.ktor.client.request.setBody
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +22,7 @@ class LoginViewModel(
     fun sendSms(phone: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
-            when (val result = api.post<MessageResponse>("auth/sms/send", SmsRequest(phone))) {
+            when (val result = api.post<MessageResponse>("auth/sms/send") { setBody(SmsRequest(phone)) }) {
                 is ApiResult.Success -> _state.value = _state.value.copy(isLoading = false)
                 is ApiResult.Failure -> _state.value = result.toState()
             }
@@ -31,7 +32,7 @@ class LoginViewModel(
     fun verifySms(phone: String, code: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
-            when (val result = api.post<VerifyResponse>("auth/sms/verify", VerifyRequest(phone, code))) {
+            when (val result = api.post<VerifyResponse>("auth/sms/verify") { setBody(VerifyRequest(phone, code)) }) {
                 is ApiResult.Success -> {
                     sessionController.save(
                         AuthTokens(

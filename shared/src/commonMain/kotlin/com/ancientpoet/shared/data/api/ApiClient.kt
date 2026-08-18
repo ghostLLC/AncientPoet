@@ -6,9 +6,9 @@ import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.post
 import io.ktor.client.request.put
-import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -21,19 +21,25 @@ class AncientPoetApi(@PublishedApi internal val client: HttpClient) {
     suspend inline fun <reified T> get(path: String): ApiResult<T> =
         execute { client.get(path) }
 
-    suspend inline fun <reified T> post(path: String, body: Any? = null): ApiResult<T> =
+    suspend inline fun <reified T> post(
+        path: String,
+        crossinline configureBody: HttpRequestBuilder.() -> Unit = {},
+    ): ApiResult<T> =
         execute {
             client.post(path) {
                 contentType(ContentType.Application.Json)
-                body?.let { setBody(it) }
+                configureBody()
             }
         }
 
-    suspend inline fun <reified T> put(path: String, body: Any? = null): ApiResult<T> =
+    suspend inline fun <reified T> put(
+        path: String,
+        crossinline configureBody: HttpRequestBuilder.() -> Unit = {},
+    ): ApiResult<T> =
         execute {
             client.put(path) {
                 contentType(ContentType.Application.Json)
-                body?.let { setBody(it) }
+                configureBody()
             }
         }
 

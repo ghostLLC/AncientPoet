@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ancientpoet.shared.data.api.AncientPoetApi
 import com.ancientpoet.shared.data.api.ApiResult
+import io.ktor.client.request.setBody
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -61,7 +62,7 @@ class CommunityViewModel(private val api: AncientPoetApi) : ViewModel() {
         }
         viewModelScope.launch {
             setLoading()
-            when (val result = api.post<MessageResponse>("community/posts/$postId/comments", CommentReq(content))) {
+            when (val result = api.post<MessageResponse>("community/posts/$postId/comments") { setBody(CommentReq(content)) }) {
                 is ApiResult.Success -> {
                     _state.value = _state.value.copy(isLoading = false, errorMessage = null)
                     loadComments(postId)
