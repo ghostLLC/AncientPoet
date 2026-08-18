@@ -1,191 +1,54 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件是自动化开发代理在 AncientPoet 仓库中的操作指南。事实状态以 `docs/STATUS.md` 为准，不根据目录名或 UI 文件推断功能已完成。
 
-## Project Overview
+## 环境约束
 
-AncientPoet（鸿雁）is a cross-platform "slow communication" app where users exchange letters with AI-powered ancient Chinese poets. Messages incur realistic delays (hours to days) based on geographic distance on dynasty-era maps. The product goal is to encourage deeper, more thoughtful writing by slowing down the pace of conversation.
+- Windows 工作目录通常为 `D:\AncientPoet`。
+- Gradle 必须由 `D:\AndroidStudio\jbr` 启动；项目目标字节码为 JVM 17。
+- Android SDK 默认位于 `%LOCALAPPDATA%\Android\Sdk`，通过忽略的 `local.properties` 配置。
+- 不修改用户全局 Gradle 配置；本地代理参数应在命令级处理。
+- 不提交 `.env`、`local.properties`、密钥、APK、日志或 Gradle 输出。
 
-**Current state**: Phase 1 + Phase 2 + Phase 3 complete. 15 poets across 5 dynasties. Storyline mode, user movement, poetry library, drawing canvas, community (文苑), and JPush notifications all implemented. Full design system overhaul applied — all screens match `DESIGN/DESIGN.md` visual standards. All 4 Gradle modules compile on JDK 17 + Android SDK 34. See `ARCHITECTURE.md` for the full phase roadmap and `DESIGN/` for UI prototypes.
+PowerShell 初始化：
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Client | Kotlin Multiplatform + Compose Multiplatform |
-| Server | Kotlin + Ktor Server 3.x |
-| Database | PostgreSQL 16 + PostGIS (geospatial distance) |
-| ORM | Exposed (Kotlin type-safe SQL) |
-| Cache/Queue | Redis 7.x (sorted-set delivery scheduling) |
-| Object Storage | MinIO (S3-compatible, self-hosted) |
-| AI | DeepSeek V4-Flash (OpenAI-compatible API) |
-| Push | 极光推送 (JPush) REST API v3 |
-| DI | Koin 4.x |
-| Local DB (client) | SQLDelight 2.x |
-| Migrations | Flyway (V1 schema, V2 seed, V3 Phase 2 data) |
-
-## Build & Run Commands
-
-Requires JDK 17+ and Android SDK (for Android target). Docker for infrastructure.
-
-```bash
-# First time: create local.properties with Android SDK path
-echo "sdk.dir=D:/Android/Sdk" > local.properties
-
-# Infrastructure
-cd deploy && docker-compose up -d          # Start PG + Redis + MinIO
-
-# Compile all modules (no device needed)
-./gradlew :shared:compileKotlinJvm
-./gradlew :server:compileKotlin
-./gradlew :desktopApp:compileKotlinJvm
-./gradlew :androidApp:compileDebugSources
-
-# Run
-./gradlew :server:run                      # Ktor on :8080
-./gradlew :desktopApp:run                  # Desktop app
-./gradlew :androidApp:installDebug         # Android debug build (needs device/emulator)
-
-# Tests
-./gradlew :server:test
-./gradlew :server:test --tests "com.ancientpoet.server.service.DelayCalculationServiceTest"
-./gradlew :shared:test
+```powershell
+$env:JAVA_HOME='D:\AndroidStudio\jbr'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
 ```
 
-## Architecture
+## 必跑质量命令
 
-**Client**: Clean Architecture + MVVM with three layers:
-- `ui/` — Compose screens + ViewModels (each screen has a `*Screen.kt` + `*ViewModel.kt` pair)
-- `domain/` — use cases, domain models, repository interfaces
-- `data/` — repository implementations wrapping Ktor Client + SQLDelight cache
-
-**Design system** (`DESIGN/` folder):
-- `DESIGN/DESIGN.md` — design token spec (colors, typography, spacing, rounded corners) with YAML frontmatter
-- `DESIGN/high_fidelity_design.md` — design philosophy brief for UI prototyping
-- `DESIGN/_1/` through `DESIGN/_8/` — HTML/CSS prototypes + PNG screenshots for all 8 screens
-- Theme implementation in `androidApp/.../ui/theme/Theme.kt` (39 Material 3 color roles + 7 Chinese pigment semantic colors) and `Type.kt` (3-level typography: Serif for headings/letters, Sans for UI labels)
-- Key visual patterns: seal-style buttons (2dp radius, red border, no fill), letter-lines input area, TranslationSeal ("译" stamp component), poem text at 18sp/36sp line-height/0.5sp letter-spacing
-
-**Server**: Ktor pipeline — plugins → routes → services → repositories → Exposed:
-- `plugin/` — Authentication (JWT via auth0-jwt), CORS, kotlinx.serialization, rate limiting, status pages
-- `route/` — thin routing layer, each file is a `fun Route.*()` extension. 11 routes: Auth, User, Poet, Conversation, Message, Storyline, Movement, Map, Poem, Upload, Community. Inside `authenticate("auth-jwt")`, JWT principal accessed via `!!` (safe since Ktor 3.x rejects unauthenticated requests). UploadRoute uses `receiveStream().readBytes()` to bypass Ktor 3.x multipart API.
-- `service/` — business logic. Key services:
-  - `MessageService.sendMessage()` — store user msg → calc delay → launch AI reply in background coroutine → schedule Redis delivery. Accepts StorylineService and MovementService for Phase 2 delay wiring.
-  - `StorylineService` — manages storyline progression: start, advance year, jump to year, get current event
-  - `MovementService` — user movement with travel time calculation (50 km/day), auto-arrival detection
-  - `DelayCalculationService` — Haversine formula with full multiplier chain: base delay × settled (×0.8) × storyline event (×1.5 for war/exile)
-- `CommunityService` — posts CRUD, comments, likes, repost, favorites, profiles (restored and compiled)
-	- `repository/` — Exposed DSL wrapped in `withContext(Dispatchers.IO)` transaction blocks. 5 repositories (Community restored): User, Poet, Conversation, Message. Uses `insert { it[col] = val }` pattern (Exposed 0.57), ResultRow access without `.value` on plain Long columns.
-- `ai/` — DeepSeekClient (OpenAI-compatible chat + vision model, 30s timeout), PromptBuilder (Chinese system prompt + painting appreciation), ContextManager (summary + 8 recent rounds), TranslationService (temperature=0.3)
-- `scheduler/` — MessageDeliveryScheduler (Redis sorted set `msg:delivery:schedule`, 1-min polling with SLF4J logging)
-- `di/ServerModule.kt` — Koin module registering all components as singletons
-
-**KMP Shared Module** (`shared/`) — `commonMain` contains:
-- `data/api/` — Ktor Client wrapper (`AncientPoetApi` class, baseUrl injected per platform)
-- `data/local/` — SQLDelight DAOs (MessageEntity, PoetEntity)
-- `domain/` — use cases (SendMessage, GetConversations, CalculateDelay, BrowsePoets)
-- `util/` — DateTimeUtil, DistanceUtil (Haversine, pure Kotlin, both platforms)
-
-**Data files**:
-- `data/poets/` — 15 poet JSONs following `li_bai.json` schema. **CRITICAL: Chinese text inside JSON strings MUST use curly quotes "" (U+201C/U+201D), never ASCII "". All files verified with balanced LQ/RQ pairs.**
-- `data/cities/` — City coordinates for 5 dynasties: tang, song, han, jin, ming
-
-## Core Systems
-
-### Delay Calculation
-
-```
-finalDelay = clamp(baseDelay × settledCoefficient × storylineCoefficient, 2h, 7d)
+```powershell
+.\gradlew.bat :shared:jvmTest :server:test :androidApp:testDebugUnitTest --no-daemon --console=plain "-Dhttp.proxyHost=" "-Dhttps.proxyHost="
+.\gradlew.bat :shared:compileKotlinJvm :shared:compileDebugKotlinAndroid :server:compileKotlin :desktopApp:compileKotlinJvm :androidApp:assembleDebug --no-daemon --console=plain "-Dhttp.proxyHost=" "-Dhttps.proxyHost="
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
 ```
 
-`DelayCalculationService.calculate()` accepts `settled` (Boolean) and `eventDelayMultiplier` (Double) parameters. Settled status (×0.8) read from `user_locations.status`. Storyline multiplier read from `poet_movements.event_type` (war/exile → ×1.5). All factors recorded in `messages.delay_factors` JSONB.
+冒烟脚本会保留 Docker 数据卷并且不会覆盖已有 `deploy/.env`。开发短信码只能在 `KTOR_DEVELOPMENT=true` 下使用。
 
-### Message Delivery Scheduling
+## 架构约定
 
-Redis Sorted Set `msg:delivery:schedule`. Score = epoch seconds, member = message ID. Polls every 60s via `zrangebyscore`. Failures logged via SLF4J and kept in set for retry.
+- Android 会话写入/清除只能经过 `SessionController`；不要绕过它直接改持久存储或 Ktor bearer cache。
+- `AncientPoetApi` 是客户端统一 HTTP 边界；请求体应在调用点以具体类型 `setBody(...)`，避免 `Any?` 擦除序列化类型。
+- Ktor 版本统一保持同一版本线。服务端当前使用 Koin Core 显式传入路由依赖，不引入面向 Ktor 2 的 `koin-ktor` 路由扩展。
+- Exposed 表模型没有声明代码级 `.references()`；需要 join 时必须显式写连接条件，数据库外键由 Flyway 维护。
+- Flyway 胖 JAR 必须保留 `mergeServiceFiles()`，否则运行时会把合法迁移误判为不可识别。
+- 推送实现是 JPush，不是 FCM。不要恢复 Firebase Messaging 服务端依赖。
+- SQLDelight 目前只有 schema 和平台依赖，业务缓存仍是内存实现。
 
-### AI Context Management
+## 当前边界
 
-After 40 messages (20 rounds), `ContextManager.shouldSummarize()` triggers. Older messages compressed via DeepSeek into `conversation_summaries`. Recent 16 messages (8 rounds) kept in full.
+- 已验证：Shared/Server/Android 单测，Shared JVM/Android、Server、Desktop 编译，Android debug APK，两轮本地 Docker/API 冒烟。
+- 凭据受限：DeepSeek、生产 SMS、JPush。
+- 部分实现：地图接口硬编码唐代城市；诗词种子 14 首；个人主页内容不完整；肖像缺失。
+- 不存在：完整 Desktop、Web、`data/maps`、`data/poems`、SQLDelight 持久 driver 接线。
+- 依赖警告：Kotlin 2.0.21 对 AGP 的最高已测试版本为 8.5，而仓库使用 AGP 8.7.2。
 
-### Storyline Mode
+## 修改流程
 
-`StorylineService` manages time progression in `mode='storyline'` conversations. Flow: create conversation with `storylineStartYear` → each message advances year by 1 → `poet_life_events` trigger at matching years → event description injected into system prompt → event `delayMultiplier` applied to delay calc. Users can jump to any year via `POST /conversations/{id}/storyline/jump`.
-
-### User Movement
-
-`MovementService` handles map relocation: user selects city → `POST /user/location/{dynastyId}/move` → travel time calculated at 50 km/day (min 1 hour) → status set to `moving` with arrival timestamp → on next status check, auto-completes if arrival time passed → settled status activates ×0.8 delay bonus.
-
-### Push Notifications (JPush)
-
-`JPushClient` sends push via JPush REST API v3 (`POST api.jpush.cn/v3/push`, Basic Auth with AppKey:MasterSecret). `PushNotificationService.sendLetterArrival()` pushes by `user_<id>` alias with title "一封来信" and location-based body. Android client registers via JPush SDK (commented, pending JPush account).
-
-## Key Conventions
-
-- Base package: `com.ancientpoet`
-- API base path: `/api/v1`
-- Flyway migrations: V1 (schema), V2 (Phase 1 seed: 5 poets), V3 (Phase 2 seed: 10 more poets + dynasties + cities)
-- JWT auth with access + refresh tokens; refresh token verification uses `JWT.require(algorithm).build().verify(token)` (not raw `decode()`)
-- All route handlers under `authenticate("auth-jwt")` except auth endpoints
-- PostGIS `geom` columns managed by PostgreSQL trigger `sync_geom_from_latlng` — NOT mapped in Exposed; app uses `lat`/`lng` directly
-- Dev SMS bypass code `123456` only when `KTOR_DEVELOPMENT=true`
-- All `printStackTrace()` replaced with SLF4J logging (`logger.error(...)`)
-- `StatusPages` catches `Exception` not `Throwable` (allows JVM Errors to propagate)
-- **Exposed 0.57 breaking changes**: `insertAndGetId` replaced with `insert { it[col] = val }` + `result[Table.id]`; `timestamptz` replaced with `text` for timestamp columns; FK `.references()` removed (constraints enforced at DB level via Flyway); ResultRow access without `.value` on plain Long columns
-- **Ktor 3.x breaking changes**: route handlers no longer `inline`, so `return@label` is prohibited — use `!!` on JWT principal inside `authenticate` blocks; `RateLimit.refillPeriod` takes `Duration` not `Int`; multipart API uses `readPart()` iterator
-- **Android SDK**: located at `D:/Android/Sdk` on this machine; `local.properties` must contain `sdk.dir=D:/Android/Sdk`; `compileSdk=34` with `androidx-core:1.13.1`
-
-## Known Gaps (Requires External Credentials/Setup)
-
-These features are structurally implemented but need third-party credentials to activate:
-
-### JPush Notifications (极光推送)
-- **File**: `server/.../push/JPushClient.kt` (REST API v3 client) + `PushNotificationService.kt` (sends by user alias)
-- **Needed**: JPush account at jiguang.cn → get AppKey + MasterSecret
-- **Env vars**: `JPUSH_APP_KEY`, `JPUSH_MASTER_SECRET`
-- **Android side**: Uncomment JPush SDK in `build.gradle.kts` + `JPushInterface.init()` in `AncientPoetApp.kt` + set `manifestPlaceholders["JPUSH_APPKEY"]`
-- **Current behavior**: Server push calls are no-op when credentials are empty
-
-### SMS Verification
-- **File**: `server/.../service/AuthService.kt`
-- **Needed**: Aliyun SMS (`SMS_PROVIDER=aliyun`) or Tencent Cloud SMS credentials
-- **Env vars**: `SMS_ACCESS_KEY`, `SMS_ACCESS_SECRET`, `SMS_SIGN_NAME`, `SMS_TEMPLATE_CODE`
-- **Current behavior**: Codes stored in-memory; dev bypass `123456` works when `KTOR_DEVELOPMENT=true`
-
-### SQLDelight Persistent Cache
-- **File**: `shared/.../data/local/LocalDataSource.kt` (`InMemoryLocalDataSource` fallback)
-- **Needed**: Platform-specific SQLDelight driver wiring (`AndroidSqliteDriver` / `JdbcSqliteDriver`) for persistence across restarts
-- **Current behavior**: In-memory cache works within a session; `Poet.sq` / `Message.sq` schemas defined. `LocalDataSource` interface ready for driver swap. Also provides API-level cache in shared module for offline resilience.
-
-### AI-Generated Poet Portraits
-- **Files**: All poet JSONs in `data/poets/` + `PoetAvatar` component uses initials
-- **Needed**: 15 portrait images (one per poet), path stored in `portrait_url` field
-- **Current behavior**: Golden square with first character of poet's name
-
-## Phase 2: Complete
-
-All Phase 2 features implemented (backend + frontend):
-
-| Feature | Backend | Frontend |
-|---------|---------|----------|
-| Storyline mode | StorylineService + Route | StorylineTimeline, year picker, banner |
-| User movement | MovementService + Route | Interactive map, city selection, animation |
-| 15 poets, 5 dynasties | V3 seed migration | Poet list/detail with serif typography |
-| Poetry library | PoemRoute (/poems, /poems/search) | PoetryListScreen, PoetryDetailScreen |
-| Drawing/painting | Vision API wiring | DrawingCanvas dialog |
-| Delay formula | Settled + event multipliers | Factor breakdown in UI |
-
-## Phase 3: Complete
-
-Community features (文苑) fully restored and compiled:
-
-| Feature | Backend | Frontend |
-|---------|---------|----------|
-| Post feed | CommunityRoute GET /community/posts | CommunityScreen with post cards |
-| Create post | CommunityRoute POST /community/posts | — (API ready) |
-| Like/unlike | CommunityRoute POST /posts/{id}/like | Heart toggle in feed |
-| Comments | CommunityRoute GET+POST /posts/{id}/comments | PostDetailScreen with comment input |
-| Repost | CommunityRoute POST /posts/{id}/repost | — (API ready) |
-| Favorites | CommunityRoute POST+GET /user/favorites | — (API ready) |
-| Profile | CommunityRoute GET /user/profile/{id} | ProfileScreen with stats |
-| Tables | community_posts, comments, likes, favorites (pre-existing) | — |
+1. 先检查相关调用链和现有测试。
+2. 行为修改先写可失败的测试，再做最小实现。
+3. 运行直接受影响测试，再运行完整质量门。
+4. 基础设施或服务端启动变更必须运行 `scripts/smoke.ps1`。
+5. 文档只记录实际验证过的结果；外部凭据未验证时明确标为 credential-gated。

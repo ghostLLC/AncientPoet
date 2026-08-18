@@ -61,9 +61,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
 
-    // Firebase
-    implementation(libs.firebase.messaging)
-
     // Logging
     implementation(libs.logback.classic)
 

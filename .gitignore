@@ -49,3 +49,6 @@ logs/
 
 # Isolated Codex worktrees
 .worktrees/
+
+# Generated server output
+server/bin/
