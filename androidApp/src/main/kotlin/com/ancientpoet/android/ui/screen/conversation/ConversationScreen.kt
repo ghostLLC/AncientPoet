@@ -1,247 +1,296 @@
 package com.ancientpoet.android.ui.screen.conversation
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.ancientpoet.android.ui.component.DrawingCanvasDialog
+import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ancientpoet.android.ui.component.ApiErrorBanner
-import com.ancientpoet.android.ui.theme.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationScreen(conversationId: Long, onBack: () -> Unit, initialYear: Int? = null, viewModel: ConversationViewModel = koinViewModel()) {
+fun ConversationScreen(
+    conversationId: Long,
+    onBack: () -> Unit,
+    initialYear: Int? = null,
+    onMap: (String, Long) -> Unit = { _, _ -> },
+    viewModel: ConversationViewModel = koinViewModel()
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var messageText by remember { mutableStateOf("") }
-    var showDrawing by remember { mutableStateOf(false) }
-    var showYearPicker by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(conversationId, initialYear) {
-        viewModel.loadInitial(conversationId, initialYear)
+    var menu by remember { mutableStateOf(false) }
+    var deleting by rememberSaveable { mutableStateOf(false) }
+    var chooseYear by rememberSaveable { mutableStateOf(false) }
+    var allPending by rememberSaveable { mutableStateOf(false) }
+    val list = rememberLazyListState()
+    var scrolledSequence by remember { mutableIntStateOf(0) }
+    LaunchedEffect(conversationId) { viewModel.loadInitial(conversationId, initialYear) }
+    LifecycleStartEffect(conversationId) {
+        viewModel.startPolling(conversationId)
+        onStopOrDispose { viewModel.stopPolling() }
     }
-    LaunchedEffect(state.messages.size) { if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.size - 1) }
-
+    LaunchedEffect(state.messages.lastOrNull()?.id, state.sentSequence) {
+        if (list.firstVisibleItemIndex < 2 || state.sentSequence > scrolledSequence) list.animateScrollToItem(0)
+        scrolledSequence = state.sentSequence
+    }
+    val detail = state.detail
     Scaffold(
-        containerColor = RicePaper,
+        modifier = Modifier.imePadding(),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column {
                 TopAppBar(
-                    title = {
-                        Text(state.poetName, fontFamily = SerifFont, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, color = InkBlack)
-                    },
-                    navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = InkBlack) } },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = RicePaper),
-                )
-                // Storyline banner
-                AnimatedVisibility(visible = state.storyline != null) {
-                    state.storyline?.let { sl ->
-                        Surface(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable { showYearPicker = true },
-                            shape = RoundedCornerShape(6.dp),
-                            color = ImperialGold.copy(alpha = 0.12f),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text("${sl.currentYear}年 · ${sl.poetAge}岁 · ${sl.locationName}", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = InkBlack)
-                                        sl.eventDescription?.let { Text(it, fontSize = 12.sp, color = if (sl.eventType == "war" || sl.eventType == "exile") VermilionRed else WarmGray) }
-                                    }
-                                    Text("↕", fontSize = 16.sp, color = ImperialGold)
-                                }
+                    title = { Text(state.poetName.ifBlank { "书信" }, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") } },
+                    actions = {
+                        IconButton(onClick = { onMap(detail?.dynastyId ?: "tang", conversationId) }) { Icon(Icons.Default.Place, "查看通信驿路") }
+                        Box {
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "通信管理") }
+                            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                                DropdownMenuItem(text = { Text(if (detail?.archived == true) "恢复通信" else "归档通信") }, onClick = {
+                                    menu = false
+                                    viewModel.archive(conversationId, detail?.archived != true, onBack)
+                                })
+                                DropdownMenuItem(text = { Text("删除通信", color = MaterialTheme.colorScheme.error) }, onClick = {
+                                    menu = false
+                                    deleting = true
+                                })
                             }
                         }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                )
+                if (detail?.currentYear != null) {
+                    TextButton(onClick = { chooseYear = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Text(
+                            "公元 " + detail.currentYear + " 年 · " + detail.poetLocation?.name.orEmpty() + "  /  选择年代",
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         },
         bottomBar = {
-            // Borderless input area — matches DESIGN/_4 letter-lines style
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = RicePaper.copy(alpha = 0.95f),
-                shadowElevation = 0.dp,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    IconButton(onClick = { showDrawing = true }, modifier = Modifier.size(40.dp)) {
-                        Icon(Icons.Default.Brush, "绘画", tint = ImperialGold, modifier = Modifier.size(22.dp))
-                    }
-                    IconButton(onClick = { }, modifier = Modifier.size(40.dp)) {
-                        Icon(Icons.Default.Image, "图片", tint = ImperialGold, modifier = Modifier.size(22.dp))
-                    }
-
-                    // Letter-lines input area — borderless with faint rule lines
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp, max = 120.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(RicePaper)
-                    ) {
-                        // Subtle letter lines (simulated via background)
-                        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                            var y = 40f
-                            while (y < size.height) {
-                                drawLine(
-                                    color = WarmGray.copy(alpha = 0.12f),
-                                    start = androidx.compose.ui.geometry.Offset(0f, y),
-                                    end = androidx.compose.ui.geometry.Offset(size.width, y),
-                                    strokeWidth = 1f,
-                                )
-                                y += 40f
+            Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, tonalElevation = 0.dp) {
+                Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    if (detail?.archived == true) {
+                        TextButton(
+                            onClick = { viewModel.archive(conversationId, false) { viewModel.loadConversation(conversationId) } },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("恢复这段通信，继续写信") }
+                    } else {
+                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = state.draftText, onValueChange = { viewModel.updateDraft(conversationId, it) },
+                                label = { Text("写一封信") }, placeholder = { Text("说说今日所见，或心中的牵挂") },
+                                enabled = !state.isSending, modifier = Modifier.weight(1f), minLines = 1, maxLines = 4,
+                                textStyle = MaterialTheme.typography.bodyMedium, shape = MaterialTheme.shapes.medium
+                            )
+                            FilledIconButton(
+                                onClick = { viewModel.prepareSend(conversationId) },
+                                enabled = state.draftText.isNotBlank() && !state.isSending && !state.previewLoading,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                if (state.isSending || state.previewLoading) {
+                                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(Icons.AutoMirrored.Filled.Send, "确认寄信时间")
+                                }
                             }
                         }
-                        OutlinedTextField(
-                            value = messageText,
-                            onValueChange = { messageText = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                lineHeight = 40.sp,
-                                letterSpacing = 0.5.sp,
-                            ),
-                            placeholder = {
-                                Text(
-                                    "研墨铺纸，落笔生花...",
-                                    color = WarmGray.copy(alpha = 0.5f),
-                                    fontFamily = SerifFont,
-                                )
+                        Text(
+                            if (state.isSending) {
+                                "正在寄信，请稍候…"
+                            } else if (state.draftText.isBlank()) {
+                                "文字书信 · 回信需要时间"
+                            } else {
+                                (if (state.draftSaved) "信稿已保存在本机" else "正在保存信稿…") + " · " + state.draftText.length + " / 12000"
                             },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
-                                unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
-                                focusedTextColor = InkBlack,
-                                cursorColor = VermilionRed,
-                            ),
-                            shape = RoundedCornerShape(0.dp),
-                        )
-                    }
-
-                    // Send — mail (envelope) icon
-                    IconButton(
-                        onClick = { viewModel.sendMessage(conversationId, messageText); messageText = "" },
-                        enabled = messageText.isNotBlank(),
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Mail, "发送",
-                            tint = if (messageText.isNotBlank()) VermilionRed else WarmGray.copy(alpha = 0.3f),
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.padding(top = 6.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-        },
+        }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding).fillMaxSize().background(RicePaper),
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(32.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
+            state = list,
+            reverseLayout = true,
+            modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Poet header — centered name with dynasty/year context
-            item {
-                ApiErrorBanner(
-                    message = state.errorMessage,
-                    canRetry = state.canRetry,
-                    onRetry = { viewModel.retry(conversationId) },
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = state.poetName,
-                        fontFamily = SerifFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp,
-                        color = InkBlack.copy(alpha = 0.9f),
-                    )
-                    state.storyline?.let { sl ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Box(Modifier.width(24.dp).height(1.dp).background(OutlineVariantColor))
-                            Text(
-                                "${sl.currentYear}年 · ${sl.locationName}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = WarmGray,
-                            )
-                            Box(Modifier.width(24.dp).height(1.dp).background(OutlineVariantColor))
+            item("status") {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ApiErrorBanner(state.errorMessage, state.canRetry, { viewModel.retry(conversationId) }, Modifier)
+                    if (state.needsLocation || (detail != null && detail.userLocation == null)) {
+                        OutlinedButton(onClick = { onMap(detail?.dynastyId ?: "tang", conversationId) }, modifier = Modifier.fillMaxWidth()) {
+                            Text("先选择落脚地，让回信有处可达")
                         }
+                    }
+                    if (state.showingCache) {
+                        Text(
+                            "当前显示本机保存的书信，联网后会继续更新",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (state.pending.isNotEmpty()) {
+                        Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    "等候回信 · " + state.pending.size + " 封",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                (if (allPending) state.pending else state.pending.takeLast(3)).forEach { pending ->
+                                    val label = when (pending.status) {
+                                        "queued" -> "来信已收，等待提笔"
+
+                                        "generating" -> "正在写回信"
+
+                                        "retrying" -> "回信暂时受阻，系统会再次尝试"
+
+                                        "failed" -> if (pending.canRetry) "回信生成失败，可以重试" else "多次生成失败，请稍后新写一封信"
+
+                                        else -> if ((pending.estimatedSecondsRemaining ?: 0) > 0) {
+                                            "回信在途 · " + remainingTime(pending.estimatedSecondsRemaining ?: 0)
+                                        } else {
+                                            "已到预计时间，正在等候投递"
+                                        }
+                                    }
+                                    Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    if (pending.canRetry) TextButton(onClick = { viewModel.retryReply(conversationId, pending.id) }) { Text("重试这封回信") }
+                                }
+                                if (state.pending.size > 3) TextButton(onClick = { allPending = !allPending }) { Text(if (allPending) "收起进度" else "查看全部进度") }
+                            }
+                        }
+                    }
+                    if (state.isLoading && state.messages.isEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+            }
+            items(state.messages.asReversed(), key = { it.id }) { message ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    MessageBubble(message.contentText, message.translation, message.imageUrl, message.senderType == "user")
+                    Text(
+                        formatLetterTime(message.deliveredAt ?: message.createdAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
+            }
+            if (state.hasOlder && state.messages.isNotEmpty()) {
+                item("older") {
+                    TextButton(onClick = { viewModel.loadOlder(conversationId) }, enabled = !state.loadingOlder, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (state.loadingOlder) "正在翻阅…" else "翻阅更早的书信")
                     }
                 }
             }
-
-            items(state.messages) { msg ->
-                MessageBubble(
-                    text = msg.contentText,
-                    translation = msg.translation,
-                    imageUrl = msg.imageUrl,
-                    isUser = msg.senderType == "user",
-                )
-            }
-            if (state.isSending) {
-                item {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        color = ImperialGold,
-                        trackColor = ImperialGold.copy(alpha = 0.15f),
+            item("intro") {
+                Column(Modifier.fillMaxWidth().padding(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(if (state.messages.isEmpty()) "从一封信开始" else "纸短情长，见字如面", style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "回信由 AI 依据人物资料进行文学演绎。诗人生平与诗词原作可在「诗人」中查阅。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (state.messages.isEmpty() && state.draftText.isBlank()) {
+                        OutlinedButton(onClick = {
+                            viewModel.updateDraft(conversationId, "近来常在忙碌中忘了看天。你今日所见的山水，可有什么值得记下的景色？")
+                        }) { Text("以今日所见为题") }
+                    }
                 }
             }
         }
     }
-
-    if (showDrawing) {
-        DrawingCanvasDialog(onConfirm = { showDrawing = false }, onDismiss = { showDrawing = false })
-    }
-
-    if (showYearPicker && state.storyline != null) {
+    state.quote?.let { quote ->
         AlertDialog(
-            onDismissRequest = { showYearPicker = false },
-            title = { Text("跳转到哪一年？", fontFamily = SerifFont, color = InkBlack) },
+            onDismissRequest = viewModel::dismissQuote,
+            title = { Text("把这封信交给鸿雁") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("当前: ${state.storyline!!.currentYear}年", color = VermilionRed, fontFamily = SerifFont)
-                    Spacer(Modifier.height(8.dp))
-                    val decades = ((state.storyline!!.currentYear - 30)..(state.storyline!!.currentYear + 30) step 10).toList()
-                    decades.forEach { decade ->
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(quote.fromLocation + " → " + quote.toLocation)
+                    Text("预计回信：" + formatLetterTime(quote.deliverAt))
+                    Text(
+                        if (quote.factors["demo"] == "true") {
+                            "当前为加速演示环境。正式通信按距离、行旅状态与人物经历计算时间。"
+                        } else {
+                            "相距约 " + quote.distanceKm.toInt() + " 公里。生成排队或服务故障可能延后，以寄信回执与实际送达为准。"
+                        },
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = { viewModel.confirmSend(conversationId) }) { Text("寄出书信") } },
+            dismissButton = { TextButton(onClick = viewModel::dismissQuote) { Text("继续写") } }
+        )
+    }
+    if (chooseYear) {
+        AlertDialog(
+            onDismissRequest = { chooseYear = false },
+            title = { Text("选择通信年代") },
+            text = {
+                Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+                    Text(
+                        "新寄出的信会采用所选年代的背景；已寄出的信沿用寄出时的时空。",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    state.yearOptions.forEach { year ->
                         TextButton(onClick = {
-                            viewModel.jumpToYear(conversationId, decade)
-                            showYearPicker = false
-                        }) {
-                            Text("${decade}年", fontFamily = SerifFont, color = InkBlack)
+                            chooseYear = false
+                            viewModel.jumpToYear(conversationId, year.year)
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text(year.year.toString() + " 年 · " + year.title)
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showYearPicker = false }) { Text("取消", color = WarmGray) } },
-            containerColor = RicePaper,
+            confirmButton = { TextButton(onClick = { chooseYear = false }) { Text("返回") } }
         )
     }
+    if (deleting) {
+        AlertDialog(
+            onDismissRequest = { deleting = false },
+            title = { Text("删除这段通信？") },
+            text = { Text("这段通信中的书信与待投递回信会被永久删除。也可以先归档，日后继续。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleting = false
+                    viewModel.delete(conversationId, onBack)
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deleting = false }) { Text("保留") } }
+        )
+    }
+}
+fun formatLetterTime(value: String?): String = value?.let {
+    runCatching { Instant.parse(it).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("M 月 d 日 HH:mm")) }.getOrDefault("")
+}.orEmpty()
+fun remainingTime(seconds: Long): String = when {
+    seconds >= 86400 -> "约 " + seconds / 86400 + " 天 " + seconds % 86400 / 3600 + " 小时"
+    seconds >= 3600 -> "约 " + seconds / 3600 + " 小时 " + seconds % 3600 / 60 + " 分钟"
+    seconds >= 60 -> "约 " + seconds / 60 + " 分钟"
+    else -> "不到一分钟"
 }

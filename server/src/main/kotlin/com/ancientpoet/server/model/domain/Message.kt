@@ -13,6 +13,9 @@ data class Message(
     val delaySeconds: Int?,
     val delayFactors: Map<String, String>?,
     val createdAt: String?,
+    val clientMessageId: String? = null,
+    val replyToMessageId: Long? = null,
+    val readAt: String? = null
 )
 
 data class EstimatedDelivery(
@@ -21,5 +24,5 @@ data class EstimatedDelivery(
     val distanceKm: Double,
     val fromLocation: String,
     val toLocation: String,
-    val factors: Map<String, String>,
+    val factors: Map<String, String>
 )

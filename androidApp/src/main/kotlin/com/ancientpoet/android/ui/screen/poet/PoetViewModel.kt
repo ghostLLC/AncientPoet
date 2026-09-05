@@ -2,135 +2,75 @@ package com.ancientpoet.android.ui.screen.poet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ancientpoet.shared.data.api.AncientPoetApi
-import com.ancientpoet.shared.data.api.ApiResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
+import com.ancientpoet.android.data.AppRepository
+import com.ancientpoet.shared.contract.*
+import com.ancientpoet.shared.data.api.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
-class PoetViewModel(private val api: AncientPoetApi) : ViewModel() {
+class PoetViewModel(private val repository: AppRepository) : ViewModel() {
     private val _state = MutableStateFlow(PoetState())
     val state: StateFlow<PoetState> = _state
-
+    private var listJob: Job? = null
+    private var detailJob: Job? = null
     fun loadPoets() {
-        viewModelScope.launch {
-            beginListLoad()
-            when (val result = api.get<PoetListRes>("poets")) {
-                is ApiResult.Success -> _state.value = _state.value.copy(
-                    poets = result.value.poets.map { PoetItem(it.id, it.name, it.dynastyName ?: "", it.birthYear, it.deathYear) },
-                    isLoading = false,
-                    listError = null,
-                )
-                is ApiResult.Failure -> setListFailure(result)
+        if (listJob?.isActive == true) return
+        listJob = viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, listError = null) }
+            repository.cached<PoetListResponse>("poets", true)?.let { p -> _state.update { it.copy(poets = p.poets) } }
+            when (val result = repository.fetch<PoetListResponse>("poets", true)) {
+                is ApiResult.Success -> _state.update { it.copy(poets = result.value.poets, isLoading = false, listError = null) }
+                is ApiResult.Failure -> _state.update { it.copy(isLoading = false, listError = result.operation()) }
             }
         }
     }
-
-    fun loadPoetDetail(poetId: Long) {
-        viewModelScope.launch { loadPoetDetailInternal(poetId) }
-    }
-
-    fun loadLifeEvents(poetId: Long) {
-        viewModelScope.launch { loadLifeEventsInternal(poetId) }
-    }
-
-    fun loadPoetDetailInitial(poetId: Long) {
-        viewModelScope.launch {
-            loadPoetDetailInternal(poetId)
-            loadLifeEventsInternal(poetId)
-        }
-    }
-
-    fun retryPoetDetail(poetId: Long) {
-        viewModelScope.launch {
-            val current = _state.value
-            if (current.detailError?.retryable == true) {
-                loadPoetDetailInternal(poetId)
-            }
-            if (current.lifeEventsError?.retryable == true) {
-                loadLifeEventsInternal(poetId)
-            }
-        }
-    }
-
-    private suspend fun loadPoetDetailInternal(poetId: Long) {
-        beginDetailLoad()
-        when (val result = api.get<PoetDetailRes>("poets/$poetId")) {
-            is ApiResult.Success -> {
-                val p = result.value
-                _state.value = _state.value.copy(
-                    selectedPoet = PoetDetail(p.id, p.name, p.courtesyName, p.artName, p.dynastyName ?: "", p.birthYear, p.deathYear, p.biographySummary, p.writingStyle),
-                    isLoading = false,
+    fun loadPoetDetailInitial(id: Long) {
+        detailJob?.cancel()
+        detailJob = viewModelScope.launch {
+            val path = "poets/" + id
+            _state.update {
+                it.copy(
+                    isLoading = true,
+                    selectedPoet = repository.cached(path, true),
+                    lifeEvents = repository.cached<List<LifeEventResponse>>(path + "/life-events", true).orEmpty(),
                     detailError = null,
+                    lifeEventsError = null
                 )
             }
-            is ApiResult.Failure -> setDetailFailure(result)
+            coroutineScope {
+                val detail = async { repository.fetch<PoetDetailResponse>(path, true) }
+                val events = async { repository.fetch<List<LifeEventResponse>>(path + "/life-events", true) }
+                val location = async { repository.fetch<PoetLocationResponse>(path + "/location", true) }
+                when (val result = detail.await()) {
+                    is ApiResult.Success -> _state.update { it.copy(selectedPoet = result.value, detailError = null) }
+                    is ApiResult.Failure -> _state.update { it.copy(detailError = result.operation()) }
+                }
+                when (val result = events.await()) {
+                    is ApiResult.Success -> _state.update { it.copy(lifeEvents = result.value, lifeEventsError = null) }
+                    is ApiResult.Failure -> _state.update { it.copy(lifeEventsError = result.operation()) }
+                }
+                when (val result = location.await()) {
+                    is ApiResult.Success -> _state.update { it.copy(location = result.value) }
+                    is ApiResult.Failure -> Unit
+                }
+            }
+            _state.update { it.copy(isLoading = false) }
         }
     }
-
-    private suspend fun loadLifeEventsInternal(poetId: Long) {
-        beginLifeEventsLoad()
-        when (val result = api.get<List<LifeEventRes>>("poets/$poetId/life-events")) {
-            is ApiResult.Success -> _state.value = _state.value.copy(
-                lifeEvents = result.value.map { LifeEventItem(it.year, it.title, it.description, it.eventType) },
-                isLoading = false,
-                lifeEventsError = null,
-            )
-            is ApiResult.Failure -> setLifeEventsFailure(result)
-        }
-    }
-
-    private fun beginListLoad() {
-        _state.value = _state.value.copy(isLoading = true, listError = null)
-    }
-
-    private fun beginDetailLoad() {
-        _state.value = _state.value.copy(isLoading = true, detailError = null)
-    }
-
-    private fun beginLifeEventsLoad() {
-        _state.value = _state.value.copy(isLoading = true, lifeEventsError = null)
-    }
-
-    private fun setListFailure(result: ApiResult.Failure) {
-        _state.value = _state.value.copy(isLoading = false, listError = PoetOperationError(result.message, result.retryable))
-    }
-
-    private fun setDetailFailure(result: ApiResult.Failure) {
-        _state.value = _state.value.copy(isLoading = false, detailError = PoetOperationError(result.message, result.retryable))
-    }
-
-    private fun setLifeEventsFailure(result: ApiResult.Failure) {
-        _state.value = _state.value.copy(isLoading = false, lifeEventsError = PoetOperationError(result.message, result.retryable))
-    }
+    fun retryPoetDetail(id: Long) = loadPoetDetailInitial(id)
 }
-
+private fun ApiResult.Failure.operation() = PoetOperationError(message, retryable)
 data class PoetState(
     val poets: List<PoetItem> = emptyList(),
-    val selectedPoet: PoetDetail? = null,
-    val lifeEvents: List<LifeEventItem> = emptyList(),
+    val selectedPoet: PoetDetailResponse? = null,
+    val lifeEvents: List<LifeEventResponse> = emptyList(),
+    val location: PoetLocationResponse? = null,
     val isLoading: Boolean = false,
     val listError: PoetOperationError? = null,
     val detailError: PoetOperationError? = null,
-    val lifeEventsError: PoetOperationError? = null,
+    val lifeEventsError: PoetOperationError? = null
 ) {
-    val errorMessage: String?
-        get() = listOfNotNull(listError, detailError, lifeEventsError)
-            .joinToString("；") { it.message }
-            .takeIf { it.isNotEmpty() }
-
-    val canRetry: Boolean
-        get() = listOfNotNull(listError, detailError, lifeEventsError).any { it.retryable }
+    val errorMessage: String? get() = listOfNotNull(listError, detailError, lifeEventsError).map { it.message }.distinct().joinToString("；").ifBlank { null }
+    val canRetry: Boolean get() = listOfNotNull(listError, detailError, lifeEventsError).any { it.retryable }
 }
-
 data class PoetOperationError(val message: String, val retryable: Boolean)
-
-data class PoetItem(val id: Long, val name: String, val dynastyName: String, val birthYear: Int, val deathYear: Int)
-data class PoetDetail(val id: Long, val name: String, val courtesyName: String?, val artName: String?, val dynastyName: String, val birthYear: Int, val deathYear: Int, val biographySummary: String?, val writingStyle: String)
-data class LifeEventItem(val year: Int, val title: String, val description: String, val eventType: String)
-
-@Serializable data class PoetListRes(val poets: List<PoetBriefRes>)
-@Serializable data class PoetBriefRes(val id: Long, val name: String, val dynastyName: String?, val birthYear: Int, val deathYear: Int)
-@Serializable data class PoetDetailRes(val id: Long, val name: String, val courtesyName: String?, val artName: String?, val dynastyName: String?, val birthYear: Int, val deathYear: Int, val biographySummary: String?, val writingStyle: String)
-@Serializable data class LifeEventRes(val id: Long, val year: Int, val age: Int, val title: String, val description: String, val locationName: String?, val eventType: String, val delayMultiplier: Double)

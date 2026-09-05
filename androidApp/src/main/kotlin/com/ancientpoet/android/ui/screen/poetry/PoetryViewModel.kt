@@ -2,102 +2,62 @@ package com.ancientpoet.android.ui.screen.poetry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ancientpoet.shared.data.api.AncientPoetApi
-import com.ancientpoet.shared.data.api.ApiResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
+import com.ancientpoet.android.data.AppRepository
+import com.ancientpoet.shared.contract.PoemDetail
+import com.ancientpoet.shared.data.api.*
+import java.net.URLEncoder
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
-class PoetryViewModel(private val api: AncientPoetApi) : ViewModel() {
+class PoetryViewModel(private val repository: AppRepository) : ViewModel() {
     private val _state = MutableStateFlow(PoetryState())
     val state: StateFlow<PoetryState> = _state
+    private var searchJob: Job? = null
+    private var requestKey = ""
+    fun search(query: String, poetId: Long? = null, more: Boolean = false) {
+        val key = query + "|" + poetId
+        searchJob?.cancel()
+        requestKey = key
+        val offset = if (more) _state.value.poems.size else 0
+        _state.update { it.copy(isLoading = true, errorMessage = null, poems = if (more) it.poems else emptyList()) }
+        searchJob = viewModelScope.launch {
+            if (query.isNotBlank() && !more) delay(350)
+            val path = "poems?q=" + URLEncoder.encode(query, "UTF-8") + (poetId?.let { "&poetId=" + it } ?: "") + "&offset=" + offset
+            if (!more) repository.cached<List<PoemDetail>>(path, true)?.let { cached -> _state.update { it.copy(poems = cached, showingCache = true) } }
+            when (val result = repository.fetch<List<PoemDetail>>(path, true)) {
+                is ApiResult.Success -> if (requestKey == key) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            poems = (if (more) it.poems + result.value else result.value).distinctBy { p -> p.id },
+                            hasMore = result.value.size == 40,
+                            showingCache = false
+                        )
+                    }
+                }
 
-    fun loadAllPoems() {
-        viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<List<PoemItem>>("poems")) {
-                is ApiResult.Success -> setPoems(result.value.map { it.toDisplay() })
-                is ApiResult.Failure -> setFailure(result)
+                is ApiResult.Failure -> if (requestKey == key) _state.update { it.copy(isLoading = false, errorMessage = result.message, canRetry = result.retryable) }
             }
         }
     }
-
-    fun loadPoetPoems(poetId: Long) {
-        viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<List<PoemItem>>("poets/$poetId/poems")) {
-                is ApiResult.Success -> setPoems(result.value.map { it.toDisplay() })
-                is ApiResult.Failure -> setFailure(result)
+    fun loadPoemDetail(id: Long) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            val path = "poems/" + id
+            _state.update { it.copy(isLoading = true, selectedPoem = repository.cached(path, true), errorMessage = null) }
+            when (val result = repository.fetch<PoemDetail>(path, true)) {
+                is ApiResult.Success -> _state.update { it.copy(selectedPoem = result.value, isLoading = false) }
+                is ApiResult.Failure -> _state.update { it.copy(isLoading = false, errorMessage = result.message, canRetry = result.retryable) }
             }
         }
     }
-
-    fun searchPoems(query: String) {
-        if (query.isBlank()) {
-            loadAllPoems()
-            return
-        }
-        viewModelScope.launch {
-            setLoading()
-            when (val result = api.get<List<PoemSearchResult>>("poems/search?q=${query.encodeForQuery()}")) {
-                is ApiResult.Success -> setPoems(result.value.map { it.toDisplay() })
-                is ApiResult.Failure -> setFailure(result)
-            }
-        }
-    }
-
-    fun loadPoemDetail(poemId: Long) {
-        val cached = _state.value.poems.find { it.id == poemId }
-        if (cached != null) {
-            _state.value = _state.value.copy(selectedPoem = PoemDetail(
-                id = cached.id,
-                title = cached.title,
-                poetName = cached.poetName,
-                dynasty = cached.dynasty,
-                content = cached.preview,
-                yearWritten = null,
-                context = null,
-                translation = null,
-                appreciation = null,
-            ))
-        } else {
-            _state.value = _state.value.copy(errorMessage = "诗词内容暂不可用", canRetry = false)
-        }
-    }
-
-    private fun setLoading() {
-        _state.value = _state.value.copy(isLoading = true, errorMessage = null, canRetry = false)
-    }
-
-    private fun setPoems(poems: List<PoemDisplay>) {
-        _state.value = _state.value.copy(poems = poems, isLoading = false, errorMessage = null, canRetry = false)
-    }
-
-    private fun setFailure(result: ApiResult.Failure) {
-        _state.value = _state.value.copy(isLoading = false, errorMessage = result.message, canRetry = result.retryable)
-    }
-
-    private fun String.encodeForQuery(): String = replace(" ", "%20").replace("&", "%26").replace("?", "%3F")
 }
-
 data class PoetryState(
-    val poems: List<PoemDisplay> = emptyList(),
+    val poems: List<PoemDetail> = emptyList(),
     val selectedPoem: PoemDetail? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val canRetry: Boolean = false,
+    val hasMore: Boolean = false,
+    val showingCache: Boolean = false
 )
-
-data class PoemDisplay(val id: Long, val title: String, val poetName: String, val dynasty: String, val preview: String)
-data class PoemDetail(
-    val id: Long, val title: String, val poetName: String, val dynasty: String,
-    val content: String, val yearWritten: Int?, val context: String?,
-    val translation: String?, val appreciation: String?,
-)
-
-@Serializable data class PoemItem(val id: Long, val title: String, val content: String, val yearWritten: Int? = null, val context: String? = null, val translation: String? = null, val appreciation: String? = null, val tags: List<String> = emptyList())
-@Serializable data class PoemSearchResult(val id: Long, val title: String, val poetName: String, val content: String, val tags: List<String> = emptyList())
-
-private fun PoemItem.toDisplay() = PoemDisplay(id, title, "", "", content.take(40))
-private fun PoemSearchResult.toDisplay() = PoemDisplay(id, title, poetName, tags.firstOrNull() ?: "", content.take(40))

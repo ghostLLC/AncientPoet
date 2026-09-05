@@ -1,148 +1,144 @@
 package com.ancientpoet.android.ui.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.ancientpoet.android.ui.screen.auth.LoginScreen
-import com.ancientpoet.android.ui.screen.community.CommunityScreen
-import com.ancientpoet.android.ui.screen.community.PostDetailScreen
-import com.ancientpoet.android.ui.screen.community.ProfileScreen
-import com.ancientpoet.android.ui.screen.conversation.ConversationScreen
-import com.ancientpoet.android.ui.screen.conversation.ConversationViewModel
+import com.ancientpoet.android.ui.screen.conversation.*
 import com.ancientpoet.android.ui.screen.home.HomeScreen
 import com.ancientpoet.android.ui.screen.map.MapScreen
-import com.ancientpoet.android.ui.screen.poet.PoetDetailScreen
-import com.ancientpoet.android.ui.screen.poet.PoetListScreen
-import com.ancientpoet.android.ui.screen.poetry.PoetryDetailScreen
-import com.ancientpoet.android.ui.screen.poetry.PoetryListScreen
+import com.ancientpoet.android.ui.screen.poet.*
+import com.ancientpoet.android.ui.screen.poetry.*
 import com.ancientpoet.android.ui.screen.settings.SettingsScreen
-import com.ancientpoet.android.ui.session.SessionViewModel
-import com.ancientpoet.android.ui.theme.RicePaper
-import com.ancientpoet.android.ui.theme.VermilionRed
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun NavGraph(
-    startDestination: String = "login",
-    sessionViewModel: SessionViewModel? = null,
-) {
-    val navController = rememberNavController()
-
-    NavHost(navController = navController, startDestination = startDestination) {
-        composable("login") {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
+fun NavGraph(authenticated: Boolean, pendingRoute: String?, onPendingRoute: (String?) -> Unit) {
+    val nav = rememberNavController()
+    val current by nav.currentBackStackEntryAsState()
+    val tabs = listOf("home" to "书信", "poets" to "诗人", "map" to "驿路", "settings" to "我的")
+    fun open(route: String) {
+        nav.navigate(route) { launchSingleTop = true }
+    }
+    fun login(destination: String? = null) {
+        onPendingRoute(destination)
+        open("login")
+    }
+    LaunchedEffect(authenticated) {
+        if (authenticated && pendingRoute != null) {
+            open(pendingRoute)
+            onPendingRoute(null)
+        }
+    }
+    Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0), bottomBar = {
+        if (current?.destination?.route in tabs.map { it.first }) {
+            NavigationBar {
+                tabs.forEachIndexed { index, (route, label) ->
+                    NavigationBarItem(
+                        selected = current?.destination?.route == route,
+                        onClick = {
+                            nav.navigate(route) {
+                                popUpTo("home") { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(listOf(Icons.Default.MailOutline, Icons.Default.People, Icons.Default.Place, Icons.Default.Person)[index], null) },
+                        label = { Text(label) }
+                    )
+                }
+            }
+        }
+    }) { padding ->
+        NavHost(navController = nav, startDestination = "home", modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
+            composable("home") {
+                HomeScreen(
+                    onConversationClick = { open("conversation/" + it) },
+                    onPoetsClick = { open("poets") },
+                    onMapClick = { open("map") },
+                    onSettingsClick = { open("settings") },
+                    onLogin = { login() }
+                )
+            }
+            composable("poets") {
+                PoetListScreen(
+                    onPoetClick = { open("poet/" + it) },
+                    onBack = { nav.popBackStack() },
+                    onPoetry = { open("poetry") },
+                    showBack = false
+                )
+            }
+            composable("poet/{poetId}", arguments = listOf(navArgument("poetId") { type = NavType.LongType })) { entry ->
+                PoetDetailScreen(
+                    poetId = entry.arguments!!.getLong("poetId"),
+                    onBack = { nav.popBackStack() },
+                    onPoetry = { open("poetry/" + it) },
+                    onStartConversation = { id, year ->
+                        val route = "new/" + id + "?year=" + (year ?: 0)
+                        if (authenticated) open(route) else login(route)
                     }
-                },
-            )
-        }
-        composable("home") {
-            HomeScreen(
-                onConversationClick = { convId -> navController.navigate("conversation/$convId?year=0") },
-                onPoetsClick = { navController.navigate("poets") },
-                onMapClick = { navController.navigate("map") },
-                onSettingsClick = { navController.navigate("settings") },
-            )
-        }
-        composable(
-            route = "conversation/{convId}?year={year}",
-            arguments = listOf(
-                navArgument("convId") { type = NavType.LongType },
-                navArgument("year") { type = NavType.IntType; defaultValue = 0 },
-            ),
-        ) { backStackEntry ->
-            val convId = backStackEntry.arguments?.getLong("convId") ?: return@composable
-            val year = backStackEntry.arguments?.getInt("year")?.takeIf { it != 0 }
-            ConversationScreen(
-                conversationId = convId,
-                initialYear = year,
-                onBack = { navController.popBackStack() },
-            )
-        }
-        composable(
-            route = "conversation/new/{poetId}?year={year}",
-            arguments = listOf(
-                navArgument("poetId") { type = NavType.LongType },
-                navArgument("year") { type = NavType.IntType; defaultValue = 0 },
-            ),
-        ) { backStackEntry ->
-            val poetId = backStackEntry.arguments?.getLong("poetId") ?: return@composable
-            val year = backStackEntry.arguments?.getInt("year")?.takeIf { it != 0 }
-            NewConversationScreen(
-                poetId = poetId,
-                year = year,
-                onCreated = { conversationId ->
-                    val creationRoute = navController.currentDestination?.route
-                    navController.navigate("conversation/$conversationId?year=${year ?: 0}") {
-                        creationRoute?.let { popUpTo(it) { inclusive = true } }
+                )
+            }
+            composable("map") { MapScreen(onBack = { nav.popBackStack() }, showBack = false, onLogin = { login() }) }
+            composable("route/{dynasty}/{conversationId}", arguments = listOf(navArgument("conversationId") { type = NavType.LongType })) { entry ->
+                MapScreen(
+                    onBack = { nav.popBackStack() },
+                    initialDynasty = entry.arguments!!.getString("dynasty") ?: "tang",
+                    conversationId = entry.arguments!!.getLong("conversationId"),
+                    onLogin = { login() }
+                )
+            }
+            composable("settings") {
+                SettingsScreen(authenticated = authenticated, onLogin = { login() }, onSignedOut = { onPendingRoute(null) })
+            }
+            composable("login") {
+                LoginScreen(onLoginSuccess = {}, onBack = {
+                    onPendingRoute(null)
+                    nav.popBackStack()
+                })
+            }
+            composable("conversation/{convId}", arguments = listOf(navArgument("convId") { type = NavType.LongType })) { entry ->
+                ConversationScreen(
+                    entry.arguments!!.getLong("convId"),
+                    onBack = { nav.popBackStack() },
+                    onMap = { dynasty, id -> open("route/" + dynasty + "/" + id) }
+                )
+            }
+            composable(
+                "new/{poetId}?year={year}",
+                arguments = listOf(
+                    navArgument("poetId") { type = NavType.LongType },
+                    navArgument("year") {
+                        type = NavType.IntType
+                        defaultValue = 0
                     }
-                },
-            )
-        }
-        composable("poets") {
-            PoetListScreen(
-                onPoetClick = { poetId -> navController.navigate("poet/$poetId") },
-                onBack = { navController.popBackStack() },
-            )
-        }
-        composable("poet/{poetId}") { backStackEntry ->
-            val poetId = backStackEntry.arguments?.getString("poetId")?.toLongOrNull() ?: return@composable
-            PoetDetailScreen(
-                poetId = poetId,
-                onBack = { navController.popBackStack() },
-                onStartConversation = { id, year -> navController.navigate("conversation/new/$id?year=${year ?: 0}") },
-            )
-        }
-        composable("map") { MapScreen(onBack = { navController.popBackStack() }) }
-        composable("settings") {
-            SettingsScreen(
-                onBack = { navController.popBackStack() },
-                onLogout = {
-                    sessionViewModel?.logout()
-                    navController.navigate("login") { popUpTo(0) { inclusive = true } }
-                },
-            )
-        }
-        composable("poetry") {
-            PoetryListScreen(onPoemClick = { poemId -> navController.navigate("poem/$poemId") }, onBack = { navController.popBackStack() })
-        }
-        composable("poetry/{poetId}") { backStackEntry ->
-            val poetId = backStackEntry.arguments?.getString("poetId")?.toLongOrNull()
-            PoetryListScreen(poetId = poetId, onPoemClick = { poemId -> navController.navigate("poem/$poemId") }, onBack = { navController.popBackStack() })
-        }
-        composable("poem/{poemId}") { backStackEntry ->
-            val poemId = backStackEntry.arguments?.getString("poemId")?.toLongOrNull() ?: return@composable
-            PoetryDetailScreen(poemId = poemId, onBack = { navController.popBackStack() })
-        }
-        composable("community") {
-            CommunityScreen(
-                onPostClick = { postId -> navController.navigate("post/$postId") },
-                onBack = { navController.popBackStack() },
-                onProfileClick = { userId -> navController.navigate("profile/$userId") },
-            )
-        }
-        composable("post/{postId}") { backStackEntry ->
-            val postId = backStackEntry.arguments?.getString("postId")?.toLongOrNull() ?: return@composable
-            PostDetailScreen(postId = postId, onBack = { navController.popBackStack() })
-        }
-        composable("profile/{userId}") { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId")?.toLongOrNull() ?: return@composable
-            ProfileScreen(userId = userId, onBack = { navController.popBackStack() })
+                )
+            ) { entry ->
+                NewConversationScreen(
+                    entry.arguments!!.getLong("poetId"),
+                    entry.arguments!!.getInt("year"),
+                    onBack = { nav.popBackStack() },
+                    onCreated = { id ->
+                        nav.navigate("conversation/" + id) { popUpTo(entry.destination.route!!) { inclusive = true } }
+                    }
+                )
+            }
+            composable("poetry") { PoetryListScreen(onPoemClick = { open("poem/" + it) }, onBack = { nav.popBackStack() }) }
+            composable("poetry/{poetId}", arguments = listOf(navArgument("poetId") { type = NavType.LongType })) { entry ->
+                PoetryListScreen(poetId = entry.arguments!!.getLong("poetId"), onPoemClick = { open("poem/" + it) }, onBack = { nav.popBackStack() })
+            }
+            composable("poem/{poemId}", arguments = listOf(navArgument("poemId") { type = NavType.LongType })) { entry ->
+                PoetryDetailScreen(entry.arguments!!.getLong("poemId"), onBack = { nav.popBackStack() })
+            }
         }
     }
 }
@@ -150,24 +146,26 @@ fun NavGraph(
 @Composable
 private fun NewConversationScreen(
     poetId: Long,
-    year: Int?,
+    year: Int,
+    onBack: () -> Unit,
     onCreated: (Long) -> Unit,
-    viewModel: ConversationViewModel = koinViewModel(),
+    viewModel: ConversationViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(poetId, year) {
-        viewModel.createConversation(poetId, year ?: 0, onCreated)
-    }
-    Box(modifier = Modifier.fillMaxSize().background(RicePaper), contentAlignment = Alignment.Center) {
-        if (state.errorMessage == null) {
-            CircularProgressIndicator(color = VermilionRed)
-        } else {
-            androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(state.errorMessage!!, color = VermilionRed)
-                if (state.canRetry) {
-                    androidx.compose.material3.TextButton(onClick = { viewModel.createConversation(poetId, year ?: 0, onCreated) }) { Text("重试") }
-                }
+    LaunchedEffect(poetId, year) { viewModel.createConversation(poetId, year, onCreated) }
+    Surface(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (state.isLoading) {
+                CircularProgressIndicator()
+                Text("正在展开信笺…", Modifier.padding(16.dp))
             }
+            state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (state.canRetry) Button(onClick = { viewModel.createConversation(poetId, year, onCreated) }) { Text("重试") }
+            TextButton(onClick = onBack) { Text("返回诗人") }
         }
     }
 }

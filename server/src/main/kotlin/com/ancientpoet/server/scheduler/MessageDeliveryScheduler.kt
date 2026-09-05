@@ -1,67 +1,112 @@
 package com.ancientpoet.server.scheduler
 
-import com.ancientpoet.server.config.RedisConfig
+import com.ancientpoet.server.ai.*
+import com.ancientpoet.server.config.AppConfig
 import com.ancientpoet.server.push.PushNotificationService
-import com.ancientpoet.server.repository.ConversationRepository
-import com.ancientpoet.server.repository.MessageRepository
+import com.ancientpoet.server.repository.*
 import kotlinx.coroutines.*
-import java.time.Instant
+import kotlinx.serialization.json.Json
 
+/** PostgreSQL owns the queue. Every claimed job is fenced by its lease token. */
 class MessageDeliveryScheduler(
+    private val config: AppConfig,
     private val messageRepo: MessageRepository,
     private val conversationRepo: ConversationRepository,
-    private val pushService: PushNotificationService,
-) {
-    private val logger = org.slf4j.LoggerFactory.getLogger(this::class.java)
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var deliveryJob: Job? = null
-    private val scheduleKey = "msg:delivery:schedule"
+    private val deepSeek: DeepSeekClient,
+    private val translation: TranslationService,
+    private val context: ContextManager,
+    private val push: PushNotificationService
+) : AutoCloseable {
+    private val logger = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val json = Json { ignoreUnknownKeys = true }
+    private var started = false
 
     fun start() {
-        deliveryJob = scope.launch {
+        if (started) return
+        started = true
+        scope.launch {
             while (isActive) {
                 try {
-                    processDeliveries()
-                } catch (e: Exception) {
-                    logger.error("Delivery polling error", e)
+                    messageRepo.deliverDue()
+                } catch (cancel: CancellationException) {
+                    throw cancel
+                } catch (failure: Exception) {
+                    logger.warn("Delivery scan failed: {}", failure.javaClass.simpleName)
                 }
-                delay(60_000) // Poll every minute
+                delay(config.workerPollMillis)
             }
         }
-    }
-
-    fun schedule(messageId: Long, deliverAt: Instant) {
-        val jedis = RedisConfig.pool.resource
-        try {
-            jedis.zadd(scheduleKey, deliverAt.epochSecond.toDouble(), messageId.toString())
-        } finally {
-            jedis.close()
-        }
-    }
-
-    suspend fun processDeliveries() {
-        val jedis = RedisConfig.pool.resource
-        try {
-            val now = Instant.now().epochSecond.toDouble()
-            val dueIds = jedis.zrangeByScore(scheduleKey, 0.0, now)
-
-            for (idStr in dueIds) {
-                val messageId = idStr.toLong()
-                try {
-                    val message = messageRepo.markDelivered(messageId)
-                    if (message != null) {
-                        val conversation = conversationRepo.findById(message.conversationId)
-                        if (conversation != null) {
-                            pushService.sendLetterArrival(conversation.userId, "远方")
+        repeat(2) {
+            scope.launch {
+                while (isActive) {
+                    var job: MessageJob? = null
+                    try {
+                        job = messageRepo.claim(config.jobLeaseSeconds)
+                        if (job == null) delay(config.workerPollMillis) else execute(job)
+                    } catch (cancel: CancellationException) {
+                        throw cancel
+                    } catch (failure: Exception) {
+                        logger.warn("Background task {} failed: {}", job?.id, failure.javaClass.simpleName)
+                        job?.let { failed ->
+                            runCatching { messageRepo.fail(failed, failure.javaClass.simpleName) }
                         }
+                        delay(config.workerPollMillis)
                     }
-                    jedis.zrem(scheduleKey, idStr)
-                } catch (e: Exception) {
-                    logger.error("Failed to deliver message $messageId", e)
                 }
             }
-        } finally {
-            jedis.close()
         }
+    }
+
+    private suspend fun execute(job: MessageJob) {
+        val message = messageRepo.findInternal(job.messageId) ?: return
+        when (job.kind) {
+            "generate" -> {
+                val snapshot = json.decodeFromString<GenerationSnapshot>(job.payload)
+                val summary = messageRepo.summarySnapshot(message.conversationId, message.id)
+                val covers = summary?.covers
+                // Excludes this submitted letter and all later input; ContextManager appends it exactly once.
+                val history = messageRepo.getRecentDelivered(message.conversationId, 40, covers, message.id)
+                val messages = context.buildMessages(
+                    message.conversationId,
+                    snapshot.systemPrompt,
+                    message.contentText.orEmpty(),
+                    summary?.text,
+                    history
+                )
+                val reply = deepSeek.chatCompletion(messages)
+                if (reply.isBlank()) error("EmptyReply")
+                messageRepo.completeGeneration(job, reply)
+            }
+
+            "translate" -> messageRepo.completeTranslation(job, translation.translateToVernacular(message.contentText.orEmpty()))
+
+            "notify" -> {
+                val conversation = conversationRepo.findById(message.conversationId)
+                if (conversation != null && !conversation.archived) push.sendLetterArrival(conversation.userId, conversation.poetName.orEmpty())
+                messageRepo.complete(job)
+            }
+
+            "summarize" -> {
+                val previous = messageRepo.summarySnapshot(message.conversationId)
+                val covers = previous?.covers
+                if (messageRepo.countAfter(message.conversationId, covers ?: 0) > 40) {
+                    val history = messageRepo.getRecentDelivered(message.conversationId, 200, covers, oldestFirst = true)
+                    val toSummarize = history.dropLast(16)
+                    if (toSummarize.isNotEmpty()) {
+                        val old = previous?.text.orEmpty()
+                        val content = toSummarize.joinToString("\n") { it.senderType + ": " + it.contentText.orEmpty() }
+                        val summary = deepSeek.summarize("此前摘要：\n" + old + "\n新增通信：\n" + content)
+                        messageRepo.completeSummary(job, message.conversationId, summary, toSummarize.last().id)
+                        return
+                    }
+                }
+                messageRepo.complete(job)
+            }
+        }
+    }
+
+    override fun close() {
+        runBlocking { scope.coroutineContext[Job]?.cancelAndJoin() }
     }
 }

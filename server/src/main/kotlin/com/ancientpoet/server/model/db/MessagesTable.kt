@@ -1,7 +1,9 @@
 package com.ancientpoet.server.model.db
 
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Table
-
+import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.sql.json.jsonb
 
 // FK constraints are enforced at DB level via Flyway V1 schema
 object MessagesTable : Table("messages") {
@@ -12,11 +14,11 @@ object MessagesTable : Table("messages") {
     val contentImageUrl = text("content_image_url").nullable()
     val translation = text("translation").nullable()
     val isDelivered = bool("is_delivered").default(false)
-    val scheduledDeliveryAt = text("scheduled_delivery_at").nullable()
-    val deliveredAt = text("delivered_at").nullable()
+    val scheduledDeliveryAt = timestampWithTimeZone("scheduled_delivery_at").nullable()
+    val deliveredAt = timestampWithTimeZone("delivered_at").nullable()
     val delaySeconds = integer("delay_seconds").nullable()
-    val delayFactors = text("delay_factors").nullable()
-    val createdAt = text("created_at")
+    val delayFactors = jsonb<Map<String, String>>("delay_factors", Json).nullable()
+    val createdAt = timestampWithTimeZone("created_at")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -25,6 +27,6 @@ object ConversationSummariesTable : Table("conversation_summaries") {
     val conversationId = long("conversation_id")
     val summaryText = text("summary_text")
     val coversUpTo = long("covers_up_to")
-    val createdAt = text("created_at")
+    val createdAt = timestampWithTimeZone("created_at")
     override val primaryKey = PrimaryKey(id)
 }

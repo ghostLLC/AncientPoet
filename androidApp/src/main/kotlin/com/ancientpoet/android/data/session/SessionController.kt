@@ -5,14 +5,14 @@ import com.ancientpoet.shared.auth.SessionStore
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class SessionController(
     private val delegate: SessionStore,
-    clientProvider: (() -> HttpClient?)? = null,
+    clientProvider: (() -> HttpClient?)? = null
 ) : SessionStore {
     private val mutex = Mutex()
     private var client: HttpClient? = null
@@ -20,6 +20,8 @@ class SessionController(
     private var generation = 0L
     private val _sessionEvents = MutableStateFlow<Boolean?>(null)
     val sessionEvents: StateFlow<Boolean?> = _sessionEvents
+    private val _identityRevision = MutableStateFlow(0L)
+    val identityRevision: StateFlow<Long> = _identityRevision
 
     constructor(delegate: SessionStore, client: HttpClient) : this(delegate) {
         this.client = client
@@ -35,6 +37,7 @@ class SessionController(
             generation++
             clearBearerCache()
             _sessionEvents.value = true
+            _identityRevision.value++
         }
     }
 
@@ -44,6 +47,7 @@ class SessionController(
             generation++
             clearBearerCache()
             _sessionEvents.value = false
+            _identityRevision.value++
         }
     }
 
@@ -63,12 +67,12 @@ class SessionController(
      * Applies a refresh only if the captured session is still current. A newer session is
      * returned so Ktor can retry with it; a logout returns null and stops the retry.
      */
-    suspend fun applyRefresh(snapshot: SessionSnapshot, accessToken: String): AuthTokens? = mutex.withLock {
+    suspend fun applyRefresh(snapshot: SessionSnapshot, accessToken: String, refreshToken: String? = null): AuthTokens? = mutex.withLock {
         val current = delegate.load() ?: return@withLock null
         if (generation != snapshot.generation || current != snapshot.tokens) {
             return@withLock current
         }
-        val updated = current.copy(accessToken = accessToken)
+        val updated = current.copy(accessToken = accessToken, refreshToken = refreshToken ?: current.refreshToken)
         delegate.save(updated)
         generation++
         clearBearerCache()
@@ -89,6 +93,7 @@ class SessionController(
         generation++
         clearBearerCache()
         _sessionEvents.value = false
+        _identityRevision.value++
         null
     }
 
@@ -104,5 +109,5 @@ class SessionController(
 
 data class SessionSnapshot(
     val generation: Long,
-    val tokens: AuthTokens,
+    val tokens: AuthTokens
 )

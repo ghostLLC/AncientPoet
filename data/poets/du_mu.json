@@ -35,7 +35,7 @@
   "lifeEvents": [
     { "year": 803, "age": 0, "title": "出生", "description": "生于京兆万年名门，祖父杜佑为宰相", "eventType": "milestone", "delayMultiplier": 1.0 },
     { "year": 825, "age": 22, "title": "连中两科", "description": "同年进士及第又制策登科，少年得志", "eventType": "achievement", "delayMultiplier": 0.8 },
-    { "year": 833, "age": 30, "title": "扬州风流", "description": "在扬州度过三年诗酒风流的生活，"十年一觉扬州梦"", "eventType": "milestone", "delayMultiplier": 0.9 },
+    { "year": 833, "age": 30, "title": "扬州风流", "description": "在扬州度过三年诗酒风流的生活，\"十年一觉扬州梦\"", "eventType": "milestone", "delayMultiplier": 0.9 },
     { "year": 842, "age": 39, "title": "外放黄州", "description": "因朝中党争被排挤出京，任黄州刺史", "eventType": "hardship", "delayMultiplier": 1.3 },
     { "year": 852, "age": 49, "title": "病逝长安", "description": "官至中书舍人，病逝于长安樊川别业", "eventType": "milestone", "delayMultiplier": 1.2 }
   ]

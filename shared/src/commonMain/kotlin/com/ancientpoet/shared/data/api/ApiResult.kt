@@ -10,5 +10,6 @@ sealed interface ApiResult<out T> {
         val message: String,
         val retryable: Boolean,
         val statusCode: Int? = null,
+        val errorCode: String? = null
     ) : ApiResult<Nothing>
 }

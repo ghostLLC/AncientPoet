@@ -19,14 +19,14 @@ fun ApiErrorBanner(
     message: String?,
     canRetry: Boolean,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     if (message == null) return
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(message, color = ErrorColor, style = MaterialTheme.typography.bodyMedium)
+        Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
         if (canRetry) {
             Spacer(Modifier.height(4.dp))
             Button(onClick = onRetry) { Text("重试") }

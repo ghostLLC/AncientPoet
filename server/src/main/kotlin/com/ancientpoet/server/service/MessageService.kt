@@ -1,166 +1,103 @@
 package com.ancientpoet.server.service
 
-import com.ancientpoet.server.ai.ContextManager
-import com.ancientpoet.server.ai.DeepSeekClient
 import com.ancientpoet.server.ai.PromptBuilder
-import com.ancientpoet.server.ai.TranslationService
-import com.ancientpoet.server.model.domain.*
-import com.ancientpoet.server.repository.ConversationRepository
-import com.ancientpoet.server.repository.MessageRepository
-import com.ancientpoet.server.repository.PoetRepository
-import com.ancientpoet.server.repository.UserRepository
-import com.ancientpoet.server.scheduler.MessageDeliveryScheduler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.ancientpoet.server.config.AppConfig
+import com.ancientpoet.server.model.domain.LocationStatus
+import com.ancientpoet.server.model.dto.*
+import com.ancientpoet.server.plugin.*
+import com.ancientpoet.server.repository.*
+import io.ktor.http.HttpStatusCode
 import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 class MessageService(
-    private val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(MessageService::class.java),
+    private val config: AppConfig,
     private val messageRepo: MessageRepository,
     private val conversationRepo: ConversationRepository,
     private val poetRepo: PoetRepository,
     private val userRepo: UserRepository,
-    private val deepSeekClient: DeepSeekClient,
-    private val translationService: TranslationService,
-    private val contextManager: ContextManager,
-    private val deliveryScheduler: MessageDeliveryScheduler,
     private val poetLocationService: PoetLocationService,
-    private val storylineService: StorylineService? = null,
-    private val movementService: MovementService? = null,
+    private val storylineService: StorylineService,
+    private val movementService: MovementService
 ) {
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     suspend fun sendMessage(
         conversationId: Long,
         userId: Long,
         contentText: String?,
         contentImageUrl: String?,
-    ): EstimatedDelivery {
-        val conversation = conversationRepo.findById(conversationId)
-            ?: throw IllegalArgumentException("Conversation not found")
-        if (conversation.userId != userId) throw SecurityException("Not your conversation")
+        clientMessageId: String? = null
+    ): MessageResponse {
+        val text = contentText?.trim().orEmpty()
+        if (text.isEmpty() || text.length > 12_000) invalid("请写下 1–12000 字的信件")
+        if (contentImageUrl != null) invalid("当前版本支持文字书信，图片功能尚未开放")
+        val clientId = clientMessageId ?: UUID.randomUUID().toString()
+        if (!clientId.matches(Regex("[A-Za-z0-9_-]{8,80}"))) invalid("信稿标识无效，请重新打开编辑页")
+        conversationRepo.requireOwned(conversationId, userId)
+        messageRepo.receipt(conversationId, userId, clientId, text)?.let { return it }
+        if (config.aiMode == "remote" && config.deepseekApiKey.isBlank()) unavailable("回信服务尚未配置，信稿可以继续保存")
+        val snapshot = prepare(conversationId, userId)
+        return messageRepo.accept(conversationId, userId, clientId, text, snapshot, config.lettersPerDay)
+    }
 
-        val poet = poetRepo.findById(conversation.poetId)
-            ?: throw IllegalArgumentException("Poet not found")
+    suspend fun preview(conversationId: Long, userId: Long): EstimatedDeliveryDto = prepare(conversationId, userId).delivery
 
-        val userLoc = userRepo.getLocation(userId, conversation.dynastyId)
-        val userLat = userLoc?.lat ?: 34.26
-        val userLng = userLoc?.lng ?: 108.94
-        val userLocationName = userLoc?.locationName ?: "长安"
-
-        val year = conversation.storylineCurrentYear
-            ?: poetLocationService.getDefaultYear(conversation.poetId)
-        val poetMovement = poetLocationService.getPoetLocation(poet.id, year)
-        val poetLat = poetMovement?.lat ?: 34.26
-        val poetLng = poetMovement?.lng ?: 108.94
-        val poetLocationName = poetMovement?.locationName ?: "长安"
-
-        val delayResult = DelayCalculationService.calculate(
-            userLat, userLng, poetLat, poetLng,
-            settled = userLoc?.status == LocationStatus.SETTLED,
-            eventDelayMultiplier = poetMovement?.let { mv ->
-                if (mv.eventType == "war" || mv.eventType == "exile") 1.5 else 1.0
-            } ?: 1.0,
+    private suspend fun prepare(conversationId: Long, userId: Long): GenerationSnapshot {
+        val conversation = conversationRepo.requireOwned(conversationId, userId)
+        val poet = poetRepo.findById(conversation.poetId) ?: notFound()
+        movementService.getStatus(userId, conversation.dynastyId)
+        val userLocation = userRepo.getLocation(userId, conversation.dynastyId)
+            ?: throw ApiException(HttpStatusCode.Conflict, "location_required", "请先在驿路选择落脚地")
+        val year = conversation.storylineCurrentYear ?: poetLocationService.getDefaultYear(poet.id)
+        val poetLocation = poetLocationService.getPoetLocation(poet.id, year)
+            ?: throw ApiException(HttpStatusCode.Conflict, "location_unknown", "这个年代的行迹暂缺，请选择其他年代")
+        val event = storylineService.getCurrentEvent(conversationId)
+        val multiplier = event?.delayMultiplier ?: if (poetLocation.eventType in setOf("war", "exile")) 1.5 else 1.0
+        val result = DelayCalculationService.calculate(
+            userLocation.lat,
+            userLocation.lng,
+            poetLocation.lat,
+            poetLocation.lng,
+            settled = userLocation.status == LocationStatus.SETTLED,
+            eventDelayMultiplier = multiplier
         )
-
-        val scheduledAt = Instant.now().plusSeconds(delayResult.finalDelaySeconds)
-        val factors = mapOf(
-            "distanceKm" to "${delayResult.distanceKm}",
-            "baseDelay" to "${delayResult.baseDelayHours}小时",
-            "fromLocation" to userLocationName,
-            "toLocation" to poetLocationName,
+        val seconds = config.demoDeliverySeconds ?: result.finalDelaySeconds.toInt()
+        val quote = EstimatedDeliveryDto(
+            seconds,
+            Instant.now().plusSeconds(seconds.toLong()).toString(),
+            result.distanceKm,
+            userLocation.locationName,
+            poetLocation.locationName,
+            mapOf(
+                "eventMultiplier" to multiplier.toString(),
+                "settled" to (userLocation.status == LocationStatus.SETTLED).toString(),
+                "demo" to (config.demoDeliverySeconds != null).toString()
+            )
         )
-
-        // Store user message (immediately delivered)
-        messageRepo.create(
-            conversationId = conversationId,
-            senderType = "user",
-            contentText = contentText,
-            contentImageUrl = contentImageUrl,
-            translation = null,
-            scheduledDeliveryAt = null,
-            delaySeconds = null,
-            delayFactors = null,
-        )
-
-        // Generate AI reply in background
-        scope.launch {
-            try {
-                val systemPrompt = PromptBuilder.buildSystemPrompt(poet, year, poetLocationName, null, contentImageUrl != null)
-                val summary = messageRepo.getLatestSummary(conversationId)
-                val recentMessages = messageRepo.getRecentDelivered(conversationId, 16, null)
-
-                val messages = contextManager.buildMessages(
-                    conversationId = conversationId,
-                    systemPrompt = systemPrompt,
-                    newUserMessage = contentText ?: if (contentImageUrl != null) "（友人随信附上一幅画作）" else "",
-                    summary = summary,
-                    recentMessages = recentMessages,
-                )
-
-                val poetReply = if (contentImageUrl != null) {
-                    deepSeekClient.chatCompletionWithImage(
-                        textContent = contentText ?: "请品评这幅画作",
-                        imageUrl = contentImageUrl,
-                        messages = messages,
-                    )
-                } else {
-                    deepSeekClient.chatCompletion(messages)
-                }
-                val translation = translationService.translateToVernacular(poetReply)
-
-                messageRepo.create(
-                    conversationId = conversationId,
-                    senderType = "poet",
-                    contentText = poetReply,
-                    contentImageUrl = null,
-                    translation = translation,
-                    scheduledDeliveryAt = scheduledAt,
-                    delaySeconds = delayResult.finalDelaySeconds.toInt(),
-                    delayFactors = factors,
-                ).also { poetMsg ->
-                    deliveryScheduler.schedule(poetMsg.id, scheduledAt)
-                }
-
-                // Check if summarization is needed
-                if (contextManager.shouldSummarize(conversationId)) {
-                    val unsummarized = messageRepo.getRecentDelivered(conversationId, 40, null)
-                    val contentToSummarize = unsummarized.joinToString("\n") { msg ->
-                        "${if (msg.senderType == "user") "友人" else "诗人"}: ${msg.contentText ?: ""}"
-                    }
-                    val summaryText = deepSeekClient.summarize(contentToSummarize)
-                    val lastMsgId = unsummarized.lastOrNull()?.id ?: return@launch
-                    messageRepo.saveSummary(conversationId, summaryText, lastMsgId)
-                }
-            } catch (e: Exception) {
-                logger.error("AI reply generation failed for conversation $conversationId", e)
-            }
-        }
-
-        return EstimatedDelivery(
-            delaySeconds = delayResult.finalDelaySeconds.toInt(),
-            deliverAt = DateTimeFormatter.ISO_INSTANT.format(scheduledAt),
-            distanceKm = delayResult.distanceKm,
-            fromLocation = userLocationName,
-            toLocation = poetLocationName,
-            factors = factors,
+        return GenerationSnapshot(
+            PromptBuilder.buildSystemPrompt(
+                poet,
+                year,
+                poetLocation.locationName,
+                event,
+                backgroundSetting = conversation.backgroundSetting
+            ),
+            quote
         )
     }
 
-    suspend fun getMessages(conversationId: Long, userId: Long): List<Message> {
-        val conversation = conversationRepo.findById(conversationId)
-            ?: throw IllegalArgumentException("Conversation not found")
-        if (conversation.userId != userId) throw SecurityException("Not your conversation")
-        return messageRepo.findByConversationId(conversationId)
+    suspend fun getMessages(conversationId: Long, userId: Long, limit: Int = 50, beforeId: Long? = null, afterId: Long? = null) = conversationRepo.requireOwned(conversationId, userId).let {
+        require(limit in 1..100 && (beforeId == null || beforeId > 0) && (afterId == null || afterId > 0))
+        require(beforeId == null || afterId == null)
+        messageRepo.findByConversationId(conversationId, limit, beforeId, afterId)
     }
 
-    suspend fun getPending(conversationId: Long, userId: Long): List<Message> {
-        val conversation = conversationRepo.findById(conversationId)
-            ?: throw IllegalArgumentException("Conversation not found")
-        if (conversation.userId != userId) throw SecurityException("Not your conversation")
-        return messageRepo.findPendingByConversationId(conversationId)
+    suspend fun getPending(conversationId: Long, userId: Long) = conversationRepo.requireOwned(conversationId, userId).let { messageRepo.pending(conversationId) }
+
+    suspend fun markRead(conversationId: Long, userId: Long, throughId: Long) {
+        conversationRepo.requireOwned(conversationId, userId)
+        require(throughId > 0)
+        messageRepo.markRead(conversationId, throughId)
     }
+
+    suspend fun retry(messageId: Long, userId: Long) = messageRepo.retry(messageId, userId)
 }

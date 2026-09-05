@@ -29,12 +29,12 @@ class HealthRouteTest {
     }
 
     @Test
-    fun readyEndpointReturnsServiceUnavailableWhenRedisFails() = testApplication {
+    fun readyEndpointReturnsServiceUnavailableWhenPostgresFails() = testApplication {
         application {
             configureSerialization()
             routing {
                 route("/api/v1") {
-                    healthRoute(FakeReadinessChecker(ReadinessReport(true, false, true)))
+                    healthRoute(FakeReadinessChecker(ReadinessReport(false, true, true)))
                 }
             }
         }
@@ -45,7 +45,7 @@ class HealthRouteTest {
     }
 
     private class FakeReadinessChecker(
-        private val report: ReadinessReport,
+        private val report: ReadinessReport
     ) : ReadinessChecker {
         override suspend fun check(): ReadinessReport = report
     }

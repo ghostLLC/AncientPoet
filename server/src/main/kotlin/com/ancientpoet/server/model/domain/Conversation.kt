@@ -12,4 +12,12 @@ data class Conversation(
     val backgroundSetting: String?,
     val createdAt: String? = null,
     val updatedAt: String? = null,
+    val dynastyName: String = "",
+    val portraitUrl: String? = null,
+    val lastMessage: String = "",
+    val lastActivityAt: String? = null,
+    val unreadCount: Int = 0,
+    val latestUnreadMessageId: Long? = null,
+    val pendingCount: Int = 0,
+    val archived: Boolean = false
 )

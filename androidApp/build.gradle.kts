@@ -1,3 +1,4 @@
+import java.net.URI
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -15,6 +16,18 @@ kotlin {
     }
 }
 
+val validateReleaseEndpoint = tasks.register("validateReleaseEndpoint") {
+    doLast {
+        val configured = providers.gradleProperty("ANCIENT_POET_API_BASE_URL").orNull
+        require(!configured.isNullOrBlank()) { "Release requires -PANCIENT_POET_API_BASE_URL=https://your-server/api/v1/" }
+        val uri = URI(configured)
+        require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null && uri.query == null && uri.fragment == null && uri.path.endsWith("/api/v1/")) {
+            "Release API endpoint must be an HTTPS URL ending in /api/v1/, without credentials or query parameters"
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(validateReleaseEndpoint) }
+
 val apiBaseUrl = providers.gradleProperty("ANCIENT_POET_API_BASE_URL")
     .orElse("http://10.0.2.2:8080/api/v1/")
 
@@ -26,11 +39,15 @@ android {
         applicationId = "com.ancientpoet.android"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
-        buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl.get()}\"")
-        manifestPlaceholders["JPUSH_APPKEY"] = System.getenv("JPUSH_APP_KEY") ?: ""
-        manifestPlaceholders["JPUSH_CHANNEL"] = "developer-default"
+        versionCode = 2
+        versionName = "0.2.0"
+    }
+
+    buildTypes {
+        getByName("debug") { buildConfigField("String", "API_BASE_URL", "\"" + apiBaseUrl.get() + "\"") }
+        getByName("release") {
+            buildConfigField("String", "API_BASE_URL", "\"" + providers.gradleProperty("ANCIENT_POET_API_BASE_URL").orElse("https://unconfigured.invalid/api/v1/").get() + "\"")
+        }
     }
 
     buildFeatures {
@@ -52,7 +69,10 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    implementation(libs.sqldelight.android)
+    implementation(libs.sqldelight.runtime)
     implementation(libs.androidx.core)
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
     implementation(libs.androidx.activity.compose)
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
@@ -76,7 +96,4 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.ktor.client.mock)
-    // JPush (极光推送) — uncomment + sync after creating JPush account at jiguang.cn
-    // implementation("cn.jiguang.sdk:jpush:5.3.0")
-    // implementation("cn.jiguang.sdk:jcore:4.1.0")
 }

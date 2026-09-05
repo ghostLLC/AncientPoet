@@ -8,74 +8,58 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
+import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 
-fun Route.messageRoute(messageService: MessageService) {
-
+fun Route.messageRoute(service: MessageService) {
     authenticate("auth-jwt") {
         post("/conversations/{id}/messages") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val convId = call.parameters["id"]!!.toLong()
             val request = call.receive<SendMessageRequest>()
-
-            val delivery = messageService.sendMessage(
-                conversationId = convId,
-                userId = userId,
-                contentText = request.contentText,
-                contentImageUrl = request.contentImageUrl,
+            call.respond(
+                service.sendMessage(
+                    call.parameters["id"]!!.toLong(),
+                    call.userId(),
+                    request.contentText,
+                    request.contentImageUrl,
+                    request.clientMessageId
+                )
             )
-
-            call.respond(HttpStatusCode.OK, MessageResponse(
-                messageId = 0, // Actual message IDs are internal
-                status = "sent",
-                estimatedDelivery = EstimatedDeliveryDto(
-                    delaySeconds = delivery.delaySeconds,
-                    deliverAt = delivery.deliverAt,
-                    distanceKm = delivery.distanceKm,
-                    fromLocation = delivery.fromLocation,
-                    toLocation = delivery.toLocation,
-                    factors = delivery.factors,
-                ),
-            ))
         }
-
+        get("/conversations/{id}/delivery-preview") {
+            call.respond(service.preview(call.parameters["id"]!!.toLong(), call.userId()))
+        }
         get("/conversations/{id}/messages") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val convId = call.parameters["id"]!!.toLong()
-            val messages = messageService.getMessages(convId, userId)
-            call.respond(HttpStatusCode.OK, messages.map { msg ->
-                MessageItem(
-                    id = msg.id, conversationId = msg.conversationId,
-                    senderType = msg.senderType,
-                    contentText = msg.contentText,
-                    translation = msg.translation,
-                    isDelivered = msg.isDelivered,
-                    scheduledDeliveryAt = msg.scheduledDeliveryAt,
-                    deliveredAt = msg.deliveredAt,
-                    createdAt = msg.createdAt,
-                )
-            })
+            val query = call.request.queryParameters
+            val messages = service.getMessages(
+                call.parameters["id"]!!.toLong(),
+                call.userId(),
+                query["limit"]?.toInt() ?: 50,
+                query["beforeId"]?.toLong(),
+                query["afterId"]?.toLong()
+            )
+            call.respond(
+                messages.map { msg ->
+                    MessageItem(
+                        msg.id, msg.conversationId, msg.senderType, msg.contentText, msg.contentImageUrl, msg.translation,
+                        msg.isDelivered, msg.scheduledDeliveryAt, msg.deliveredAt, msg.createdAt, msg.clientMessageId, msg.readAt
+                    )
+                }
+            )
         }
-
         get("/conversations/{id}/pending") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val convId = call.parameters["id"]!!.toLong()
-            val pending = messageService.getPending(convId, userId)
-            val now = java.time.Instant.now()
-            call.respond(HttpStatusCode.OK, pending.map { msg ->
-                PendingMessageItem(
-                    id = msg.id, senderType = msg.senderType,
-                    contentText = msg.contentText,
-                    scheduledDeliveryAt = msg.scheduledDeliveryAt,
-                    delaySeconds = msg.delaySeconds,
-                    estimatedSecondsRemaining = msg.scheduledDeliveryAt?.let {
-                        val scheduled = java.time.Instant.parse(it)
-                        (scheduled.epochSecond - now.epochSecond).coerceAtLeast(0)
-                    },
-                )
-            })
+            call.respond(service.getPending(call.parameters["id"]!!.toLong(), call.userId()))
+        }
+        post("/conversations/{id}/read") {
+            service.markRead(call.parameters["id"]!!.toLong(), call.userId(), call.receive<ReadRequest>().throughId)
+            call.respond(HttpStatusCode.NoContent)
+        }
+        post("/messages/{id}/retry") {
+            val accepted = service.retry(call.parameters["id"]!!.toLong(), call.userId())
+            call.respond(if (accepted) HttpStatusCode.Accepted else HttpStatusCode.Conflict, mapOf("accepted" to accepted))
         }
     }
 }
+
+fun io.ktor.server.application.ApplicationCall.userId(): Long = principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
+
+@Serializable private data class ReadRequest(val throughId: Long)

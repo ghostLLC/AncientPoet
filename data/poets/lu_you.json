@@ -39,6 +39,6 @@
     { "year": 1153, "age": 28, "title": "秦桧黜落", "description": "应试被秦桧黜落，仕途受阻", "eventType": "hardship", "delayMultiplier": 1.4 },
     { "year": 1172, "age": 47, "title": "前线抗金", "description": "在南郑前线参与军事，度过一生中最豪迈的时光", "eventType": "achievement", "delayMultiplier": 0.9 },
     { "year": 1189, "age": 64, "title": "罢官闲居", "description": "被劾去官，退居山阴长达二十载", "eventType": "hardship", "delayMultiplier": 1.4 },
-    { "year": 1210, "age": 85, "title": "临终示儿", "description": "临终作《示儿》："王师北定中原日，家祭无忘告乃翁"", "eventType": "milestone", "delayMultiplier": 1.5 }
+    { "year": 1210, "age": 85, "title": "临终示儿", "description": "临终作《示儿》：\"王师北定中原日，家祭无忘告乃翁\"", "eventType": "milestone", "delayMultiplier": 1.5 }
   ]
 }

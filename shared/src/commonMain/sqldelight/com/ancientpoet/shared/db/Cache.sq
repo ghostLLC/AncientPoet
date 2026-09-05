@@ -1,0 +1,42 @@
+CREATE TABLE cached_resource (
+    owner_id INTEGER NOT NULL,
+    resource_key TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    saved_at INTEGER NOT NULL,
+    PRIMARY KEY(owner_id, resource_key)
+);
+
+CREATE TABLE letter_draft (
+    owner_id INTEGER NOT NULL,
+    conversation_id INTEGER NOT NULL,
+    client_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    PRIMARY KEY(owner_id, conversation_id)
+);
+
+readResource:
+SELECT payload, saved_at FROM cached_resource WHERE owner_id = ? AND resource_key = ?;
+
+writeResource:
+INSERT OR REPLACE INTO cached_resource(owner_id, resource_key, payload, saved_at) VALUES (?, ?, ?, ?);
+
+deleteResource:
+DELETE FROM cached_resource WHERE owner_id = ? AND resource_key = ?;
+
+readDraft:
+SELECT client_id, content FROM letter_draft WHERE owner_id = ? AND conversation_id = ?;
+
+writeDraft:
+INSERT OR REPLACE INTO letter_draft(owner_id, conversation_id, client_id, content) VALUES (?, ?, ?, ?);
+
+acknowledgeDraft:
+DELETE FROM letter_draft WHERE owner_id = ? AND conversation_id = ? AND client_id = ?;
+
+deleteConversationDraft:
+DELETE FROM letter_draft WHERE owner_id = ? AND conversation_id = ?;
+
+clearResources:
+DELETE FROM cached_resource WHERE owner_id = ?;
+
+clearDrafts:
+DELETE FROM letter_draft WHERE owner_id = ?;

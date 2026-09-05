@@ -40,7 +40,7 @@
     { "year": 800, "age": 28, "title": "进士及第", "description": "进士及第，同年与元稹订交，成终生挚友", "eventType": "achievement", "delayMultiplier": 0.8 },
     { "year": 807, "age": 35, "title": "长恨歌成", "description": "任盩厔县尉时创作《长恨歌》，名动天下", "eventType": "achievement", "delayMultiplier": 0.9 },
     { "year": 815, "age": 43, "title": "贬谪江州", "description": "因越职言事被贬为江州司马，人生转折点", "eventType": "hardship", "delayMultiplier": 1.4 },
-    { "year": 816, "age": 44, "title": "琵琶行成", "description": "在江州写下《琵琶行》，"同是天涯沦落人"", "eventType": "achievement", "delayMultiplier": 1.2 },
+    { "year": 816, "age": 44, "title": "琵琶行成", "description": "在江州写下《琵琶行》，\"同是天涯沦落人\"", "eventType": "achievement", "delayMultiplier": 1.2 },
     { "year": 822, "age": 50, "title": "筑白堤", "description": "任杭州刺史，疏浚西湖，筑堤防洪，百姓称“白堤”", "eventType": "achievement", "delayMultiplier": 0.9 },
     { "year": 831, "age": 59, "title": "退居香山", "description": "以太子少傅退居洛阳香山寺，与刘禹锡等诗酒唱和", "eventType": "milestone", "delayMultiplier": 1.0 },
     { "year": 846, "age": 74, "title": "安详离世", "description": "病逝于洛阳，赠尚书右仆射，葬于香山寺", "eventType": "milestone", "delayMultiplier": 1.0 }

@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.ancientpoet"
-version = "0.1.0"
+version = "0.2.0"
 
 application {
     mainClass.set("com.ancientpoet.server.ApplicationKt")
@@ -19,6 +19,16 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":shared"))
+    implementation("com.zaxxer:HikariCP:6.3.3")
+    implementation("com.tencentcloudapi:tencentcloud-sdk-java-sms:3.2.18")
+    implementation(enforcedPlatform("io.netty:netty-bom:4.1.137.Final"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.22.2"))
+    constraints {
+        implementation("org.apache.commons:commons-lang3:3.20.0")
+        implementation("org.apache.commons:commons-configuration2:2.15.1")
+        implementation("org.bouncycastle:bcprov-jdk18on:1.85.2")
+    }
     // Ktor Server
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
@@ -51,7 +61,7 @@ dependencies {
     implementation(libs.jedis)
 
     // MinIO
-    implementation("io.minio:minio:8.5.10")
+    implementation("io.minio:minio:8.6.0")
 
     // Koin DI
     implementation(libs.koin.core)

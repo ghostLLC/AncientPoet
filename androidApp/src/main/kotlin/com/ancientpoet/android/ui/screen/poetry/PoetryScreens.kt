@@ -2,90 +2,73 @@ package com.ancientpoet.android.ui.screen.poetry
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.ancientpoet.android.ui.theme.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ancientpoet.android.ui.component.ApiErrorBanner
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PoetryListScreen(
-    poetId: Long? = null,
-    onPoemClick: (Long) -> Unit,
-    onBack: () -> Unit,
-    viewModel: PoetryViewModel = koinViewModel(),
-) {
-    var searchQuery by remember { mutableStateOf("") }
+fun PoetryListScreen(poetId: Long? = null, onPoemClick: (Long) -> Unit, onBack: () -> Unit, viewModel: PoetryViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(poetId, searchQuery) {
-        if (poetId != null) viewModel.loadPoetPoems(poetId)
-        else if (searchQuery.isNotBlank()) viewModel.searchPoems(searchQuery)
-        else viewModel.loadAllPoems()
-    }
-
-    Scaffold(
-        containerColor = RicePaper,
-        topBar = {
-            TopAppBar(
-                title = { Text(if (poetId != null) "诗词" else "诗词阁", fontFamily = SerifFont, color = InkBlack) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = InkBlack) } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = RicePaper),
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            ApiErrorBanner(
-                message = state.errorMessage,
-                canRetry = state.canRetry,
-                onRetry = { if (poetId != null) viewModel.loadPoetPoems(poetId) else viewModel.searchPoems(searchQuery) },
-            )
-            OutlinedTextField(
-                value = searchQuery, onValueChange = { searchQuery = it; viewModel.searchPoems(it) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("搜索诗词...", color = WarmGray, fontFamily = SerifFont) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ImperialGold, unfocusedBorderColor = WarmGray.copy(alpha = 0.3f), cursorColor = VermilionRed),
-                shape = RoundedCornerShape(4.dp),
-            )
-
-            if (state.poems.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("暂无诗词", fontFamily = SerifFont, color = WarmGray) }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(state.poems) { poem ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable { onPoemClick(poem.id) },
-                            colors = CardDefaults.cardColors(containerColor = RicePaper),
-                            shape = RoundedCornerShape(8.dp),
-                            elevation = CardDefaults.cardElevation(1.dp),
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(poem.title, fontFamily = SerifFont, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = InkBlack)
-                                Spacer(Modifier.height(2.dp))
-                                Text("${poem.poetName} · ${poem.dynasty}", style = MaterialTheme.typography.labelMedium, color = ImperialGold)
-                                if (poem.preview.isNotBlank()) {
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(poem.preview, fontFamily = SerifFont, fontSize = 15.sp, color = InkBlack.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                        }
-                    }
+    var query by rememberSaveable(poetId) { mutableStateOf("") }
+    LaunchedEffect(query, poetId) { viewModel.search(query, poetId) }
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
+        TopAppBar(
+            title = { Text("诗词阁") },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+        )
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item { Text("读诗，也读一段心境。", style = MaterialTheme.typography.headlineSmall) }
+            item {
+                OutlinedTextField(
+                    query,
+                    { query = it.take(100) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(if (poetId == null) "搜索题目、诗句或作者" else "在这位诗人的作品中搜索") }
+                )
+                ApiErrorBanner(state.errorMessage, state.canRetry, { viewModel.search(query, poetId) })
+                if (state.showingCache) Text("正在阅读本机缓存", style = MaterialTheme.typography.bodySmall)
+                if (state.isLoading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp))
+            }
+            if (state.poems.isEmpty() && !state.isLoading) item { Text("未找到匹配作品，试试其他诗句。") }
+            items(state.poems, key = { it.id }) { poem ->
+                Column(
+                    Modifier.fillMaxWidth().clickable(onClickLabel = "阅读全文") { onPoemClick(poem.id) }.padding(vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(poem.title, style = MaterialTheme.typography.titleLarge)
+                    Text(poem.poetName + " · " + poem.dynasty, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                    Text(
+                        poem.content,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
+            if (state.hasMore) {
+                item {
+                    TextButton(
+                        onClick = { viewModel.search(query, poetId, true) },
+                        enabled = !state.isLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("读更多诗词") }
                 }
             }
         }
@@ -96,80 +79,79 @@ fun PoetryListScreen(
 @Composable
 fun PoetryDetailScreen(poemId: Long, onBack: () -> Unit, viewModel: PoetryViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var showTranslation by remember { mutableStateOf(false) }
-
+    val uriHandler = LocalUriHandler.current
+    var showTranslation by rememberSaveable(poemId) { mutableStateOf(false) }
+    var linkError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(poemId) { viewModel.loadPoemDetail(poemId) }
-
-    Scaffold(
-        containerColor = RicePaper,
-        topBar = {
-            TopAppBar(
-                title = { Text(state.selectedPoem?.title ?: "", fontFamily = SerifFont, color = InkBlack) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = InkBlack) } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = RicePaper),
-            )
-        },
-    ) { padding ->
-        ApiErrorBanner(
-            message = state.errorMessage,
-            canRetry = state.canRetry,
-            onRetry = { viewModel.loadPoemDetail(poemId) },
-            modifier = Modifier.padding(padding),
+    val poem = state.selectedPoem
+    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
+        TopAppBar(
+            title = { Text("诗词原作") },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
         )
-        state.selectedPoem?.let { poem ->
-            Column(
-                modifier = Modifier.padding(padding).padding(24.dp).fillMaxSize().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                Card(colors = CardDefaults.cardColors(containerColor = RicePaper), shape = RoundedCornerShape(8.dp), elevation = CardDefaults.cardElevation(2.dp)) {
-                    Column(modifier = Modifier.padding(24.dp)) {
-                        Text(poem.title, fontFamily = SerifFont, fontWeight = FontWeight.Bold, fontSize = 28.sp, color = InkBlack)
-                        Spacer(Modifier.height(8.dp))
-                        Text("${poem.poetName} · ${poem.dynasty}${poem.yearWritten?.let { " · ${it}年" } ?: ""}", style = MaterialTheme.typography.labelMedium, color = ImperialGold)
-                        Spacer(Modifier.height(20.dp))
-                        HorizontalDivider(color = WarmGray.copy(alpha = 0.2f))
-                        Spacer(Modifier.height(20.dp))
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            item {
+                ApiErrorBanner(state.errorMessage, state.canRetry, { viewModel.loadPoemDetail(poemId) })
+                if (state.isLoading && poem == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+            if (poem != null) {
+                item {
+                    Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.large) {
+                        Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                            Text(poem.title, style = MaterialTheme.typography.headlineMedium)
+                            Text(
+                                poem.poetName + " · " + poem.dynasty + (poem.yearWritten?.let { " · 公元 " + it + " 年" } ?: ""),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            SelectionContainer { Text(poem.content, style = MaterialTheme.typography.bodyLarge) }
+                        }
+                    }
+                }
+                if (!poem.translation.isNullOrBlank()) {
+                    item {
+                        TextButton(onClick = { showTranslation = !showTranslation }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (showTranslation) "收起白话导读" else "读白话导读")
+                        }
+                        if (showTranslation) SelectionContainer { Text(poem.translation.orEmpty(), style = MaterialTheme.typography.bodyMedium) }
+                    }
+                }
+                poem.context?.let { context ->
+                    item {
+                        Text("版本与背景", style = MaterialTheme.typography.titleLarge)
+                        Text(context, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+                    }
+                }
+                poem.appreciation?.let { appreciation ->
+                    item {
+                        Text("慢读一会儿", style = MaterialTheme.typography.titleLarge)
+                        Text(appreciation, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+                    }
+                }
+                item {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    if (poem.sourceUrl?.startsWith("https://") == true) {
+                        TextButton(onClick = { runCatching { uriHandler.openUri(poem.sourceUrl.orEmpty()) }.onFailure { linkError = "无法打开浏览器，请稍后重试" } }) {
+                            Text("查阅原文来源 · 维基文库")
+                        }
                         Text(
-                            if (showTranslation && poem.translation != null) poem.translation else poem.content,
-                            fontFamily = SerifFont,
-                            fontSize = 18.sp,
-                            lineHeight = 36.sp,
-                            letterSpacing = 0.5.sp,
-                            color = InkBlack,
+                            "原作属于公有领域。白话导读与赏读为项目编写，不替代古籍校勘。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            "这条旧版资料的来源仍待补充校订。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-
-                if (poem.translation != null) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        TextButton(onClick = { showTranslation = !showTranslation }) {
-                            Text(if (showTranslation) "查看原文" else "查看白话翻译", color = VermilionRed, fontFamily = SerifFont)
-                        }
-                    }
-                }
-
-                if (poem.context != null) {
-                    Card(colors = CardDefaults.cardColors(containerColor = RicePaper), shape = RoundedCornerShape(8.dp)) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("创作背景", fontFamily = SerifFont, fontWeight = FontWeight.Bold, color = VermilionRed)
-                            Spacer(Modifier.height(8.dp))
-                            Text(poem.context, fontFamily = SerifFont, fontSize = 16.sp, color = InkBlack.copy(alpha = 0.8f))
-                        }
-                    }
-                }
-
-                if (poem.appreciation != null) {
-                    Card(colors = CardDefaults.cardColors(containerColor = RicePaper), shape = RoundedCornerShape(8.dp)) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("赏析", fontFamily = SerifFont, fontWeight = FontWeight.Bold, color = ImperialGold)
-                            Spacer(Modifier.height(8.dp))
-                            Text(poem.appreciation, fontFamily = SerifFont, fontSize = 16.sp, color = InkBlack.copy(alpha = 0.8f))
-                        }
-                    }
+                    linkError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
             }
-        } ?: Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-            Text("加载中...", fontFamily = SerifFont, color = WarmGray)
         }
     }
 }

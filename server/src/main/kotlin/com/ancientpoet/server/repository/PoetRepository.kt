@@ -4,7 +4,7 @@ import com.ancientpoet.server.model.db.*
 import com.ancientpoet.server.model.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -43,29 +43,35 @@ class PoetRepository {
     private fun poetsWithDynasties(): Join = PoetsTable.join(
         otherTable = DynastiesTable,
         joinType = JoinType.INNER,
-        additionalConstraint = { PoetsTable.dynastyId eq DynastiesTable.id },
+        additionalConstraint = { PoetsTable.dynastyId eq DynastiesTable.id }
     )
 
     private fun org.jetbrains.exposed.sql.ResultRow.toPoet(): Poet = Poet(
         id = this[PoetsTable.id], name = this[PoetsTable.name], courtesyName = this[PoetsTable.courtesyName],
         artName = this[PoetsTable.artName], dynastyId = this[PoetsTable.dynastyId], dynastyName = this[DynastiesTable.name],
         birthYear = this[PoetsTable.birthYear], deathYear = this[PoetsTable.deathYear],
-        personalityProfile = PersonalityProfile(traits = emptyList()),
+        personalityProfile = this[PoetsTable.personalityProfile].jsonObject.let { profile ->
+            PersonalityProfile(
+                profile["traits"]?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty(),
+                profile["mbti"]?.jsonPrimitive?.contentOrNull,
+                profile["speakingStyle"]?.jsonPrimitive?.contentOrNull
+            )
+        },
         writingStyle = this[PoetsTable.writingStyle], systemPrompt = this[PoetsTable.systemPrompt],
-        biographySummary = this[PoetsTable.biographySummary], portraitUrl = this[PoetsTable.portraitUrl], isFree = this[PoetsTable.isFree],
+        biographySummary = this[PoetsTable.biographySummary], portraitUrl = this[PoetsTable.portraitUrl], isFree = this[PoetsTable.isFree]
     )
 
     private fun org.jetbrains.exposed.sql.ResultRow.toMovement() = PoetMovement(
         id = this[PoetMovementsTable.id], poetId = this[PoetMovementsTable.poetId],
         yearStart = this[PoetMovementsTable.yearStart], yearEnd = this[PoetMovementsTable.yearEnd],
         locationName = this[PoetMovementsTable.locationName], lat = this[PoetMovementsTable.lat], lng = this[PoetMovementsTable.lng],
-        eventDescription = this[PoetMovementsTable.eventDescription], eventType = this[PoetMovementsTable.eventType],
+        eventDescription = this[PoetMovementsTable.eventDescription], eventType = this[PoetMovementsTable.eventType]
     )
 
     private fun org.jetbrains.exposed.sql.ResultRow.toPoem() = Poem(
         id = this[PoemsTable.id], poetId = this[PoemsTable.poetId],
         title = this[PoemsTable.title], content = this[PoemsTable.content], yearWritten = this[PoemsTable.yearWritten],
-        context = this[PoemsTable.context], translation = this[PoemsTable.translation], appreciation = this[PoemsTable.appreciation], tags = emptyList(),
+        context = this[PoemsTable.context], translation = this[PoemsTable.translation], appreciation = this[PoemsTable.appreciation], tags = this[PoemsTable.tags].orEmpty()
     )
 
     private fun org.jetbrains.exposed.sql.ResultRow.toLifeEvent() = PoetLifeEvent(
@@ -73,6 +79,6 @@ class PoetRepository {
         year = this[PoetLifeEventsTable.year], age = this[PoetLifeEventsTable.age],
         title = this[PoetLifeEventsTable.title], description = this[PoetLifeEventsTable.description],
         locationName = this[PoetLifeEventsTable.locationName], eventType = this[PoetLifeEventsTable.eventType],
-        delayMultiplier = this[PoetLifeEventsTable.delayMultiplier].toDouble(), sortOrder = this[PoetLifeEventsTable.sortOrder],
+        delayMultiplier = this[PoetLifeEventsTable.delayMultiplier].toDouble(), sortOrder = this[PoetLifeEventsTable.sortOrder]
     )
 }

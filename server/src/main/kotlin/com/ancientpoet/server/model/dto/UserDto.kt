@@ -8,14 +8,14 @@ data class UserProfileResponse(
     val phone: String,
     val nickname: String? = null,
     val avatarUrl: String? = null,
-    val bio: String? = null,
+    val bio: String? = null
 )
 
 @Serializable
 data class UpdateProfileRequest(
     val nickname: String? = null,
     val avatarUrl: String? = null,
-    val bio: String? = null,
+    val bio: String? = null
 )
 
 @Serializable
@@ -25,14 +25,14 @@ data class UserLocationResponse(
     val locationName: String,
     val lat: Double,
     val lng: Double,
-    val status: String,
+    val status: String
 )
 
 @Serializable
 data class UpdateLocationRequest(
-    val dynastyId: String,
+    val dynastyId: String? = null,
     val locationName: String,
     val lat: Double,
     val lng: Double,
-    val status: String = "settled",
+    val status: String = "settled"
 )

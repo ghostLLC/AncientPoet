@@ -35,6 +35,6 @@
     { "year": 1497, "age": 27, "title": "中解元", "description": "参加应天府乡试第一名中解元", "eventType": "achievement", "delayMultiplier": 0.8 },
     { "year": 1499, "age": 29, "title": "科场案", "description": "卷入科场舞弊案被下狱，前程尽毁", "eventType": "hardship", "delayMultiplier": 1.5 },
     { "year": 1514, "age": 44, "title": "佯狂脱身", "description": "察觉宁王有不臣之心，佯狂裸奔以脱身", "eventType": "hardship", "delayMultiplier": 1.4 },
-    { "year": 1524, "age": 54, "title": "病逝桃花庵", "description": "在穷困中病逝，"别人笑我太疯癫，我笑他人看不穿"", "eventType": "milestone", "delayMultiplier": 1.2 }
+    { "year": 1524, "age": 54, "title": "病逝桃花庵", "description": "在穷困中病逝，\"别人笑我太疯癫，我笑他人看不穿\"", "eventType": "milestone", "delayMultiplier": 1.2 }
   ]
 }

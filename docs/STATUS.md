@@ -1,56 +1,34 @@
-# AncientPoet 实施状态
+# 当前状态 · 0.2.0
 
-更新日期：2026-08-18。本文按“已验证、凭据受限、部分实现、不存在”区分仓库现状。
+更新日期：2026-09-05。当前阶段为 **Android 文字书信体验版，完成本地实现与验证，尚未正式发布**。以下不把占位文件、编译结果或模拟服务等同于线上能力。
 
-## 已验证工作
+| 范围 | 当前结果 | 剩余边界 |
+| --- | --- | --- |
+| 账号 | 短信适配、失败反馈、刷新轮换、重放撤销、退出、账号删除 | 真实腾讯云账号和模板未发送验证 |
+| 书信 | 真实 ACK、幂等、可靠生成/投递、独立译文重试、分页、已读、归档删除 | 远程模型质量、延迟、费用和长期行为待验证 |
+| Android | 草稿/会话重启恢复、缓存、主导航、键盘避让、错误反馈 | 完整无障碍朗读和更多 OEM/Android 版本待测 |
+| 诗人与诗词 | 15 位诗人；24 篇诗词中 10 篇附本轮核校原文来源 | 14 篇旧资料和更多人物时间线继续编辑核校 |
+| 地图 | 朝代城市、统一投影、选址确认、迁徙恢复、等待规则 | 示意图，历史边界与位置精度不作地图产品承诺 |
+| 设置与数据 | 主题、字号、可选提醒、可解析 JSON 导出、级联删除 | 服务器备份的保留/删除策略须由实际运营环境确定 |
+| 后台提醒 | WorkManager 周期任务、通知权限、私密文案 | 系统可延后；HyperOS 锁屏、省电、重启真机待验 |
+| 服务可靠性 | PostgreSQL 任务租约、恢复、幂等、连接池、安全错误 | 大规模负载、多实例容量与故障演练待做 |
+| 依赖与构建 | 单元/业务检查通过，Lint 无错误，Debug 与未签名 Release 可构建 | 无真实签名、商店安装或生产上线证明 |
+| 社区、媒体、绘图 | 产品入口和对应服务路由关闭 | 需独立定义产品与隐私方案后实现 |
+| Desktop / Web | Desktop 占位模块编译；Web 未实现 | 不作为可用客户端宣传 |
 
-- Shared JVM、Shared Android、Server、Desktop JVM 均可编译。
-- Android 可组装 debug APK。
-- 自动化测试共 35 个：Shared 9、Server 12、Android 14，均通过且目标任务不再是 `NO-SOURCE`。
-- JWT、距离/延迟、API 结果、会话刷新竞态、失败重试和健康路由均有确定性测试。
-- Docker Compose 可启动 PostgreSQL/PostGIS、Redis、MinIO。
-- `scripts/smoke.ps1` 已连续通过两轮，覆盖：
-  - Flyway V1–V3
-  - `/health/live` 与 `/health/ready`
-  - 开发短信验证与真实 access/refresh token 返回
-  - Bearer 访问 `/conversations`
-  - 15 位数据库种子诗人
-  - 非空唐代城市接口
-- GitHub Actions 已编码相同的测试优先和跨模块编译命令；尚未推送，因此远程 Actions 运行未验证。
+## 本次验证摘要
 
-## 已实现但受外部凭据限制
+- 45 项单元测试：shared 13、server 15、androidApp 17，全部通过。
+- 21 项真实 PostgreSQL/HTTP 业务检查：包含旧库升级、账号权限、消息可见性、并发去重、进程恢复、分页、迁徙、删除与生产短信保护。
+- Android 模拟器实际操作：游客→诗人→登录→写信、位置确认、键盘、原文/译文、会话与草稿重启恢复、JSON 导出、小屏大字号、夜间显示。
+- 326 个已解析 Maven 运行时版本在本次 OSV 查询中无命中。不是全系统安全认证。
+- [完整命令、截图与限制](VERIFICATION.md)，[对应审查项处理结果](IMPLEMENTATION.md)。
 
-- DeepSeek 对话、翻译、视觉请求：需要有效 `DEEPSEEK_API_KEY`，未做真实计费 API 端到端测试。
-- 生产短信：配置字段存在，但供应商发送闭环尚未以真实账号验证；开发模式使用 `123456`。
-- JPush：服务端 REST 客户端存在，需要 `JPUSH_APP_KEY` 和 `JPUSH_MASTER_SECRET`；Android SDK 仍未启用，设备到信推送未验证。
+## 发布前仍需完成
 
-## 部分产品行为
+1. 配置真实 HTTPS 服务、腾讯云短信和账号实际可用模型，验证成功、超时、额度不足和供应商故障。
+2. 在小米 17 Ultra / HyperOS 3 上测试冷启动、锁屏、断网、后台恢复、通知权限与系统字号，并补充最低支持版本检查。
+3. 使用自有正式密钥签名，验证安装/覆盖升级/卸载；演练数据库备份、恢复和实际 Nginx 部署。
+4. 建立运营数据保留、故障监控、告警和用量预算，再决定公开分发范围。
 
-- 地图：`data/cities` 含五个朝代 JSON，但服务端城市接口当前返回硬编码唐代城市，未按 `dynastyId` 加载数据。
-- 诗词：数据库种子共 14 首，不是完整诗词库。
-- 社区个人页：统计和基础资料存在，个人发帖列表等展示仍不完整。
-- 诗人肖像：仓库没有正式肖像资产，客户端使用占位表现。
-- Shared 离线缓存：`InMemoryLocalDataSource` 会话内可用，但重启后不持久。
-
-## 仓库中不存在
-
-- `data/maps` 朝代地图底图。
-- `data/poems` 独立完整诗词数据集。
-- 完整 Desktop 客户端；现有模块仅为 Phase 4 占位窗口。
-- Web 客户端模块。
-- SQLDelight Android/JVM driver 到运行时仓储的持久化接线。
-
-## 已知依赖风险
-
-Kotlin 2.0.21 在构建时明确警告：Android Gradle Plugin 8.7.2 超过其最高已测试版本 8.5。当前本地质量门通过，但该组合不属于 Kotlin 插件声明的已测试范围，依赖升级必须整体回归。
-
-## 验证命令
-
-```powershell
-$env:JAVA_HOME='D:\AndroidStudio\jbr'
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-
-.\gradlew.bat :shared:jvmTest :server:test :androidApp:testDebugUnitTest --rerun-tasks --no-daemon --console=plain "-Dhttp.proxyHost=" "-Dhttps.proxyHost="
-.\gradlew.bat :shared:compileKotlinJvm :shared:compileDebugKotlinAndroid :server:compileKotlin :desktopApp:compileKotlinJvm :androidApp:assembleDebug --rerun-tasks --no-daemon --console=plain "-Dhttp.proxyHost=" "-Dhttps.proxyHost="
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
-```
+历史报告与规划留作追溯，涉及实现状态时以本文和验证记录为准。

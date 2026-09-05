@@ -15,15 +15,15 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlinx.serialization.Serializable
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNull
 
 class AuthClientTest {
     @Test
@@ -54,8 +54,9 @@ class AuthClientTest {
             when {
                 request.url.encodedPath.endsWith("/auth/refresh") -> {
                     refreshRequests++
-                    respondJson("""{"accessToken":"access-new"}""")
+                    respondJson("""{"accessToken":"access-new","refreshToken":"refresh-rotated"}""")
                 }
+
                 else -> {
                     protectedRequests++
                     protectedHeaders += request.headers[HttpHeaders.Authorization]
@@ -76,7 +77,7 @@ class AuthClientTest {
         assertEquals(1, refreshRequests)
         assertEquals(2, protectedRequests)
         assertEquals(listOf<String?>("Bearer access-old", "Bearer access-new"), protectedHeaders)
-        assertEquals(AuthTokens("access-new", "refresh-current", 7), store.value)
+        assertEquals(AuthTokens("access-new", "refresh-rotated", 7), store.value)
         client.close()
     }
 
@@ -117,7 +118,7 @@ class AuthClientTest {
             if (request.url.encodedPath.endsWith("/auth/refresh")) {
                 refreshStarted.complete(Unit)
                 releaseRefresh.await()
-                respondJson("""{"accessToken":"access-new"}""")
+                respondJson("""{"accessToken":"access-new","refreshToken":"refresh-rotated"}""")
             } else {
                 protectedRequests++
                 respondError(HttpStatusCode.Unauthorized)
@@ -199,7 +200,7 @@ class AuthClientTest {
         var protectedRequests = 0
         val engine = MockEngine { request ->
             if (request.url.encodedPath.endsWith("/auth/refresh")) {
-                respondJson("""{"accessToken":"access-refreshed"}""")
+                respondJson("""{"accessToken":"access-refreshed","refreshToken":"refresh-rotated"}""")
             } else {
                 protectedRequests++
                 protectedHeaders += request.headers[HttpHeaders.Authorization]
@@ -217,7 +218,7 @@ class AuthClientTest {
             refreshReturnHook = {
                 callbackReached.complete(Unit)
                 releaseCallback.await()
-            },
+            }
         )
         val api = AncientPoetApi(client)
         val call = async { api.get<TestPayload>("protected") }
@@ -245,7 +246,7 @@ class AuthClientTest {
         var protectedRequests = 0
         val engine = MockEngine { request ->
             if (request.url.encodedPath.endsWith("/auth/refresh")) {
-                respondJson("""{"accessToken":"access-refreshed"}""")
+                respondJson("""{"accessToken":"access-refreshed","refreshToken":"refresh-rotated"}""")
             } else {
                 protectedRequests++
                 protectedHeaders += request.headers[HttpHeaders.Authorization]
@@ -263,7 +264,7 @@ class AuthClientTest {
             refreshReturnHook = {
                 callbackReached.complete(Unit)
                 releaseCallback.await()
-            },
+            }
         )
         val call = async { AncientPoetApi(client).get<TestPayload>("protected") }
 
@@ -299,10 +300,41 @@ class AuthClientTest {
         client.close()
     }
 
+    @Test
+    fun refreshOutagePreservesSessionAndAllowsRetry() = runTest {
+        val tokens = AuthTokens("access-expired", "refresh-valid", 7)
+        val store = InMemorySessionStore(tokens)
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath.endsWith("/auth/refresh")) {
+                respondError(HttpStatusCode.ServiceUnavailable)
+            } else {
+                respondError(HttpStatusCode.Unauthorized)
+            }
+        }
+        val client = HttpClientFactory.create(SessionController(store), engine)
+        val failure = assertIs<ApiResult.Failure>(AncientPoetApi(client).get<TestPayload>("protected"))
+        assertEquals(true, failure.retryable)
+        assertEquals(tokens, store.value)
+        client.close()
+    }
+
+    @Test
+    fun otherOriginNeverReceivesAuthorizationOrRefresh() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val engine = MockEngine { request ->
+            requests += request
+            respondError(HttpStatusCode.Unauthorized)
+        }
+        val client = HttpClientFactory.create(SessionController(InMemorySessionStore(AuthTokens("secret", "refresh", 7))), engine)
+        AncientPoetApi(client).get<TestPayload>("https://untrusted.example/api/v1/protected")
+        assertEquals(0, requests.size)
+        client.close()
+    }
+
     private fun MockRequestHandleScope.respondJson(body: String) = respond(
         content = body,
         status = HttpStatusCode.OK,
-        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
     )
 
     @Serializable

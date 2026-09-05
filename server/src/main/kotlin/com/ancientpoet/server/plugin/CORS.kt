@@ -1,18 +1,16 @@
 package com.ancientpoet.server.plugin
 
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
+import com.ancientpoet.server.config.AppConfig
+import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.CORS
 
-fun Application.configureCORS() {
+fun Application.configureCORS(config: AppConfig) {
     install(CORS) {
-        anyHost()
-        allowHeader(io.ktor.http.HttpHeaders.ContentType)
-        allowHeader(io.ktor.http.HttpHeaders.Authorization)
-        allowMethod(io.ktor.http.HttpMethod.Get)
-        allowMethod(io.ktor.http.HttpMethod.Post)
-        allowMethod(io.ktor.http.HttpMethod.Put)
-        allowMethod(io.ktor.http.HttpMethod.Delete)
-        allowMethod(io.ktor.http.HttpMethod.Options)
+        config.corsAllowedHosts.forEach { allowHost(it, schemes = listOf("https")) }
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader("X-Expected-User-Id")
+        listOf(HttpMethod.Get, HttpMethod.Post, HttpMethod.Put, HttpMethod.Delete, HttpMethod.Options).forEach { allowMethod(it) }
     }
 }

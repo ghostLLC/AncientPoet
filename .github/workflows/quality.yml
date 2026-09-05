@@ -1,57 +1,59 @@
 name: Quality
-
 on:
   push:
-    branches:
-      - master
-      - "codex/**"
+    branches: [master, "codex/**"]
   pull_request:
-    branches:
-      - master
-      - "codex/**"
-
+    branches: [master, "codex/**"]
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
-  test-and-build:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
-      - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Run automated tests
-        run: ./gradlew :shared:jvmTest :server:test :androidApp:testDebugUnitTest --stacktrace
-
-      - name: Compile all maintained targets
-        run: ./gradlew :shared:compileKotlinJvm :server:compileKotlin :desktopApp:compileKotlinJvm :androidApp:assembleDebug --stacktrace
-
-      - name: Upload test reports on failure
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK 35
+        run: $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Validate editorial data
+        run: python3 scripts/validate_data.py
+      - name: Unit tests and Android lint
+        run: ./gradlew :shared:jvmTest :server:test :androidApp:testDebugUnitTest :androidApp:lintDebug --stacktrace
+      - name: Build maintained modules and desktop placeholder
+        run: ./gradlew :androidApp:assembleDebug :desktopApp:compileKotlinJvm :server:shadowJar --stacktrace
+      - name: Verify isolated PostgreSQL business flows and old-schema upgrade
+        run: python3 scripts/verify_business.py
+      - name: Compile unsigned release candidate with a nonproduction HTTPS endpoint
+        run: ./gradlew :androidApp:assembleRelease -PANCIENT_POET_API_BASE_URL=https://verification.invalid/api/v1/ --stacktrace
+      - name: Audit resolved runtime dependencies
+        run: |
+          ./gradlew :server:dependencies --configuration runtimeClasspath --console=plain > build/verification/server-dependencies.txt
+          ./gradlew :androidApp:dependencies --configuration debugRuntimeClasspath --console=plain > build/verification/android-dependencies.txt
+          python3 scripts/audit_dependencies.py build/verification/server-dependencies.txt build/verification/android-dependencies.txt --fail-on-match
+      - name: Upload verification summaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ github.run_id }}
+          path: |
+            build/verification/business-results.json
+            build/verification/dependency-audit.json
+          retention-days: 14
+      - name: Upload test and lint reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-${{ github.run_id }}
+          name: failure-reports-${{ github.run_id }}
           path: |
             shared/build/reports/tests/
             server/build/reports/tests/
-            androidApp/build/reports/tests/
+            androidApp/build/reports/
           if-no-files-found: ignore
           retention-days: 7

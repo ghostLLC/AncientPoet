@@ -1,95 +1,60 @@
 package com.ancientpoet.server.route
 
+import com.ancientpoet.server.model.domain.Conversation
 import com.ancientpoet.server.model.dto.*
 import com.ancientpoet.server.repository.PoetRepository
-import com.ancientpoet.server.service.ConversationService
-import com.ancientpoet.server.service.PoetLocationService
-import com.ancientpoet.server.service.UserService
+import com.ancientpoet.server.service.*
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
+import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 
 fun Route.conversationRoute(
-    conversationService: ConversationService,
-    poetRepository: PoetRepository,
-    poetLocationService: PoetLocationService,
-    userService: UserService,
+    service: ConversationService,
+    poets: PoetRepository,
+    locations: PoetLocationService,
+    users: UserService
 ) {
-
+    suspend fun details(conversation: Conversation): ConversationResponse {
+        val year = conversation.storylineCurrentYear ?: locations.getDefaultYear(conversation.poetId)
+        val poetLocation = locations.getPoetLocation(conversation.poetId, year)
+        val userLocation = users.getLocation(conversation.userId, conversation.dynastyId)
+        return conversation.dto().copy(
+            userLocation = userLocation?.let { LocationBrief(it.locationName, it.lat, it.lng, it.status.name.lowercase()) },
+            poetLocation = poetLocation?.let { LocationBrief(it.locationName, it.lat, it.lng, event = it.eventDescription) }
+        )
+    }
     authenticate("auth-jwt") {
         post("/conversations") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val request = call.receive<CreateConversationRequest>()
-            val conv = conversationService.createConversation(
-                userId, request.poetId, request.dynastyId, request.backgroundSetting,
-            )
-            val poet = poetRepository.findById(conv.poetId)
-            val year = poetLocationService.getDefaultYear(conv.poetId)
-            val poetLoc = poetLocationService.getPoetLocation(conv.poetId, year)
-            val userLoc = userService.getLocation(userId, conv.dynastyId)
-
-            call.respond(HttpStatusCode.Created, ConversationResponse(
-                id = conv.id,
-                poet = PoetBrief(
-                    id = poet?.id ?: 0, name = poet?.name ?: "",
-                    dynasty = poet?.dynastyName ?: "",
-                    portraitUrl = poet?.portraitUrl,
-                ),
-                mode = conv.mode,
-                dynastyId = conv.dynastyId,
-                backgroundSetting = conv.backgroundSetting,
-                userLocation = userLoc?.let {
-                    LocationBrief(name = it.locationName, lat = it.lat, lng = it.lng, status = it.status.name.lowercase())
-                },
-                poetLocation = poetLoc?.let {
-                    LocationBrief(name = it.locationName, lat = it.lat, lng = it.lng, event = it.eventDescription)
-                },
-            ))
+            val req = call.receive<CreateConversationRequest>()
+            val conversation = service.createConversation(call.userId(), req.poetId, req.dynastyId, req.backgroundSetting, req.startYear, req.mode)
+            call.respond(HttpStatusCode.Created, details(conversation))
         }
-
         get("/conversations") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val conversations = conversationService.listUserConversations(userId)
-            call.respond(HttpStatusCode.OK, conversations.map { conv ->
-                val poet = poetRepository.findById(conv.poetId)
-                ConversationResponse(
-                    id = conv.id,
-                    poet = PoetBrief(id = poet?.id ?: 0, name = poet?.name ?: "", dynasty = poet?.dynastyName ?: ""),
-                    mode = conv.mode, dynastyId = conv.dynastyId,
-                    backgroundSetting = conv.backgroundSetting, createdAt = conv.createdAt,
-                )
-            })
+            val archived = call.request.queryParameters["archived"]?.toBooleanStrict() ?: false
+            call.respond(service.listUserConversations(call.userId(), archived).map { it.dto() })
         }
-
         get("/conversations/{id}") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val convId = call.parameters["id"]!!.toLong()
-            val conv = conversationService.getConversation(convId)
-            if (conv != null && conv.userId == userId) {
-                val poet = poetRepository.findById(conv.poetId)
-                call.respond(HttpStatusCode.OK, ConversationResponse(
-                    id = conv.id,
-                    poet = PoetBrief(id = poet?.id ?: 0, name = poet?.name ?: "", dynasty = poet?.dynastyName ?: ""),
-                    mode = conv.mode, dynastyId = conv.dynastyId,
-                    backgroundSetting = conv.backgroundSetting, createdAt = conv.createdAt,
-                ))
-            } else {
-                call.respond(HttpStatusCode.NotFound, mapOf("error" to "会话不存在"))
-            }
+            call.respond(details(service.getConversation(call.parameters["id"]!!.toLong(), call.userId())))
         }
-
+        post("/conversations/{id}/archive") {
+            service.archive(call.parameters["id"]!!.toLong(), call.userId(), call.receive<ArchiveRequest>().archived)
+            call.respond(HttpStatusCode.NoContent)
+        }
         delete("/conversations/{id}") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asLong()
-            val convId = call.parameters["id"]!!.toLong()
-            conversationService.deleteConversation(convId, userId)
-            call.respond(HttpStatusCode.OK, mapOf("message" to "已删除"))
+            service.deleteConversation(call.parameters["id"]!!.toLong(), call.userId())
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }
+
+private fun Conversation.dto() = ConversationResponse(
+    id = id, poet = PoetBrief(poetName.orEmpty(), dynastyName, poetId, portraitUrl), mode = mode, dynastyId = dynastyId,
+    backgroundSetting = backgroundSetting, createdAt = createdAt, currentYear = storylineCurrentYear, lastMessage = lastMessage.take(120),
+    lastActivityAt = lastActivityAt, unreadCount = unreadCount, pendingCount = pendingCount, archived = archived,
+    latestUnreadMessageId = latestUnreadMessageId
+)
+
+@Serializable private data class ArchiveRequest(val archived: Boolean = true)

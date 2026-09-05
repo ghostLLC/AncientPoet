@@ -8,6 +8,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpSend
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
@@ -16,12 +17,14 @@ import io.ktor.client.plugins.plugin
 import io.ktor.client.request.accept
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.request
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import kotlinx.coroutines.CancellationException
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
@@ -31,7 +34,7 @@ object HttpClientFactory {
     fun create(
         sessionController: SessionController,
         engine: HttpClientEngine? = null,
-        refreshReturnHook: (suspend () -> Unit)? = null,
+        refreshReturnHook: (suspend () -> Unit)? = null
     ): HttpClient {
         val client = if (engine == null) {
             HttpClient(OkHttp) {
@@ -49,22 +52,27 @@ object HttpClientFactory {
 
     private fun installSessionHeaderGuard(
         client: HttpClient,
-        sessionController: SessionController,
+        sessionController: SessionController
     ) {
         val protectedPathPrefix = protectedPathPrefix()
         client.plugin(HttpSend).intercept { request ->
+            require(sameOrigin(request.url.build())) { "API requests must stay on the configured origin" }
             val path = request.url.build().encodedPath
-            if (path.startsWith(protectedPathPrefix) &&
-                !path.startsWith("${protectedPathPrefix}auth/")
+            if (sameOrigin(request.url.build()) && path.startsWith(protectedPathPrefix) &&
+                (!path.startsWith("${protectedPathPrefix}auth/") || path.endsWith("auth/logout"))
             ) {
                 val current = sessionController.currentSessionForRequest()
+                val expected = request.headers["X-Expected-User-Id"]?.toLongOrNull()
+                if (expected != null && expected != current?.userId) throw kotlinx.io.IOException("Account changed before request")
                 request.headers.remove(HttpHeaders.Authorization)
                 current?.let { tokens ->
                     request.headers.append(
                         HttpHeaders.Authorization,
-                        "Bearer ${tokens.accessToken}",
+                        "Bearer ${tokens.accessToken}"
                     )
                 }
+            } else {
+                request.headers.remove(HttpHeaders.Authorization)
             }
             execute(request)
         }
@@ -72,13 +80,26 @@ object HttpClientFactory {
 
     private fun io.ktor.client.HttpClientConfig<*>.configure(
         sessionController: SessionController,
-        refreshReturnHook: (suspend () -> Unit)?,
+        refreshReturnHook: (suspend () -> Unit)?
     ) {
         val refreshMutex = Mutex()
         val protectedPathPrefix = protectedPathPrefix()
 
+        followRedirects = false
+        install(HttpTimeout) {
+            requestTimeoutMillis = 25_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 25_000
+        }
+
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true })
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                    encodeDefaults = true
+                }
+            )
         }
         install(DefaultRequest) {
             url(BuildConfig.API_BASE_URL.let { if (it.endsWith('/')) it else "$it/" })
@@ -93,6 +114,7 @@ object HttpClientFactory {
                     }
                 }
                 refreshTokens {
+                    if (!sameOrigin(response.request.url)) return@refreshTokens null
                     refreshMutex.withLock {
                         val snapshot = sessionController.captureSession() ?: return@withLock null
                         oldTokens?.accessToken?.let { oldAccessToken ->
@@ -106,6 +128,7 @@ object HttpClientFactory {
                                 setBody(RefreshRequest(snapshot.tokens.refreshToken))
                             }
                             if (!response.status.isSuccess()) {
+                                if (response.status.value != 401 && response.status.value != 403) throw kotlinx.io.IOException("Refresh temporarily unavailable")
                                 return@withLock sessionController
                                     .clearAfterRefreshFailure(snapshot)
                                     ?.asBearerTokens()
@@ -114,22 +137,22 @@ object HttpClientFactory {
                             val updated = sessionController.applyRefresh(
                                 snapshot = snapshot,
                                 accessToken = refreshed.accessToken,
+                                refreshToken = refreshed.refreshToken
                             )
                             refreshReturnHook?.invoke()
                             updated?.asBearerTokens()
                         } catch (cancellation: CancellationException) {
                             throw cancellation
                         } catch (_: Throwable) {
-                            sessionController
-                                .clearAfterRefreshFailure(snapshot)
-                                ?.asBearerTokens()
+                            // A timeout or outage is not evidence that the account was revoked.
+                            throw kotlinx.io.IOException("Session could not be refreshed; retry later")
                         }
                     }
                 }
                 sendWithoutRequest { request ->
                     val path = request.url.build().encodedPath
-                    path.startsWith(protectedPathPrefix) &&
-                        !path.startsWith("${protectedPathPrefix}auth/")
+                    sameOrigin(request.url.build()) && path.startsWith(protectedPathPrefix) &&
+                        (!path.startsWith("${protectedPathPrefix}auth/") || path.endsWith("auth/logout"))
                 }
             }
         }
@@ -146,8 +169,12 @@ object HttpClientFactory {
     private data class RefreshRequest(val refreshToken: String)
 
     @Serializable
-    private data class RefreshResponse(val accessToken: String)
+    private data class RefreshResponse(val accessToken: String, val refreshToken: String)
+
+    private fun sameOrigin(url: Url): Boolean {
+        val base = Url(BuildConfig.API_BASE_URL)
+        return url.protocol == base.protocol && url.host == base.host && url.port == base.port
+    }
 }
 
-private fun com.ancientpoet.shared.auth.AuthTokens.asBearerTokens() =
-    BearerTokens(accessToken, refreshToken)
+private fun com.ancientpoet.shared.auth.AuthTokens.asBearerTokens() = BearerTokens(accessToken, refreshToken)

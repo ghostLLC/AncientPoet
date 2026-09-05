@@ -6,6 +6,14 @@ import com.ancientpoet.server.service.AuthService
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.authenticate
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -15,13 +23,33 @@ class JwtTokenTest {
     private val config = testConfig()
 
     @Test
+    fun protectedRouteRejectsRefreshToken() = testApplication {
+        application {
+            configureAuthentication(config)
+            routing { authenticate("auth-jwt") { get("/protected") { call.respondText("ok") } } }
+        }
+        assertEquals(
+            HttpStatusCode.Unauthorized,
+            client.get("/protected") {
+                bearerAuth(generateRefreshToken(config, 42L))
+            }.status
+        )
+        assertEquals(
+            HttpStatusCode.OK,
+            client.get("/protected") {
+                bearerAuth(generateAccessToken(config, 42L))
+            }.status
+        )
+    }
+
+    @Test
     fun accessTokenContainsIdentityAndStandardClaims() {
         val token = JWT.decode(generateAccessToken(config, 42L))
 
         assertEquals(42L, token.getClaim("userId").asLong())
         assertEquals(config.jwtIssuer, token.issuer)
         assertEquals(listOf(config.jwtAudience), token.audience)
-        assertNull(token.getClaim("type").asString())
+        assertEquals("access", token.getClaim("type").asString())
     }
 
     @Test
@@ -44,7 +72,7 @@ class JwtTokenTest {
         val invalidTokens = listOf(
             generateRefreshToken(config.copy(jwtIssuer = "wrong-issuer"), 42L),
             generateRefreshToken(config.copy(jwtAudience = "wrong-audience"), 42L),
-            generateRefreshToken(config.copy(jwtSecret = "different-local-test-secret-at-least-32-chars"), 42L),
+            generateRefreshToken(config.copy(jwtSecret = "different-local-test-secret-at-least-32-chars"), 42L)
         )
 
         invalidTokens.forEach { token -> assertNull(service.verifyRefreshToken(token)) }
@@ -96,6 +124,6 @@ class JwtTokenTest {
         smsSignName = "test",
         smsTemplateCode = "test",
         jpushAppKey = "",
-        jpushMasterSecret = "",
+        jpushMasterSecret = ""
     )
 }

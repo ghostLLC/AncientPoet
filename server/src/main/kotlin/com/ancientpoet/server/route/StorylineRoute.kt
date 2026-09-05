@@ -16,47 +16,58 @@ import kotlinx.serialization.Serializable
 
 fun Route.storylineRoute(
     storylineService: StorylineService,
-    conversationService: ConversationService,
+    conversationService: ConversationService
 ) {
-
     authenticate("auth-jwt") {
         get("/conversations/{id}/storyline/state") {
             val convId = call.parameters["id"]!!.toLong()
-            val state = storylineService.getState(convId)
-            call.respond(HttpStatusCode.OK, StorylineStateResponse(
-                currentYear = state.currentYear,
-                poetAge = state.poetAge,
-                locationName = state.locationName,
-                lat = state.lat, lng = state.lng,
-                activeEvent = state.activeEvent,
-                eventDescription = state.eventDescription,
-                eventType = state.eventType,
-                delayMultiplier = state.delayMultiplier,
-            ))
+            val state = storylineService.getState(convId, call.userId())
+            call.respond(
+                HttpStatusCode.OK,
+                StorylineStateResponse(
+                    currentYear = state.currentYear,
+                    poetAge = state.poetAge,
+                    locationName = state.locationName,
+                    lat = state.lat, lng = state.lng,
+                    activeEvent = state.activeEvent,
+                    eventDescription = state.eventDescription,
+                    eventType = state.eventType,
+                    delayMultiplier = state.delayMultiplier
+                )
+            )
         }
 
         post("/conversations/{id}/storyline/jump") {
             val convId = call.parameters["id"]!!.toLong()
             val request = call.receive<JumpYearRequest>()
-            val state = storylineService.jumpToYear(convId, request.year)
-            call.respond(HttpStatusCode.OK, StorylineStateResponse(
-                currentYear = state.currentYear,
-                poetAge = state.poetAge,
-                locationName = state.locationName,
-                lat = state.lat, lng = state.lng,
-                activeEvent = state.activeEvent,
-                eventDescription = state.eventDescription,
-                eventType = state.eventType,
-                delayMultiplier = state.delayMultiplier,
-            ))
+            val state = storylineService.jumpToYear(convId, request.year, call.userId())
+            call.respond(
+                HttpStatusCode.OK,
+                StorylineStateResponse(
+                    currentYear = state.currentYear,
+                    poetAge = state.poetAge,
+                    locationName = state.locationName,
+                    lat = state.lat, lng = state.lng,
+                    activeEvent = state.activeEvent,
+                    eventDescription = state.eventDescription,
+                    eventType = state.eventType,
+                    delayMultiplier = state.delayMultiplier
+                )
+            )
         }
     }
 }
 
 @Serializable data class StorylineStateResponse(
-    val currentYear: Int, val poetAge: Int,
-    val locationName: String, val lat: Double, val lng: Double,
-    val activeEvent: String?, val eventDescription: String?,
-    val eventType: String, val delayMultiplier: Double,
+    val currentYear: Int,
+    val poetAge: Int,
+    val locationName: String,
+    val lat: Double,
+    val lng: Double,
+    val activeEvent: String?,
+    val eventDescription: String?,
+    val eventType: String,
+    val delayMultiplier: Double
 )
+
 @Serializable data class JumpYearRequest(val year: Int)

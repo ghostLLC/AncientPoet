@@ -1,7 +1,10 @@
 package com.ancientpoet.server.model.db
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import org.jetbrains.exposed.sql.Table
-
+import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.sql.json.jsonb
 
 // FK constraints are enforced at DB level via Flyway V1 schema
 object PoetsTable : Table("poets") {
@@ -12,13 +15,13 @@ object PoetsTable : Table("poets") {
     val dynastyId = varchar("dynasty_id", 20)
     val birthYear = integer("birth_year")
     val deathYear = integer("death_year")
-    val personalityProfile = text("personality_profile")
+    val personalityProfile = jsonb<JsonElement>("personality_profile", Json)
     val writingStyle = text("writing_style")
     val systemPrompt = text("system_prompt")
     val biographySummary = text("biography_summary").nullable()
     val portraitUrl = text("portrait_url").nullable()
     val isFree = bool("is_free").default(true)
-    val createdAt = text("created_at")
+    val createdAt = timestampWithTimeZone("created_at")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -58,7 +61,7 @@ object PoemsTable : Table("poems") {
     val context = text("context").nullable()
     val translation = text("translation").nullable()
     val appreciation = text("appreciation").nullable()
-    val tags = text("tags").nullable()
-    val createdAt = text("created_at")
+    val tags = jsonb<List<String>>("tags", Json).nullable()
+    val createdAt = timestampWithTimeZone("created_at")
     override val primaryKey = PrimaryKey(id)
 }

@@ -52,3 +52,7 @@ logs/
 
 # Generated server output
 server/bin/
+
+# Python verification caches
+__pycache__/
+*.py[cod]

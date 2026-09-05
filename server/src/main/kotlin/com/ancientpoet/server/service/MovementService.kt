@@ -1,124 +1,60 @@
 package com.ancientpoet.server.service
 
 import com.ancientpoet.server.model.domain.LocationStatus
-import com.ancientpoet.server.model.domain.UserLocation
+import com.ancientpoet.server.plugin.*
+import com.ancientpoet.server.repository.CityRepository
 import com.ancientpoet.server.repository.UserRepository
+import io.ktor.http.HttpStatusCode
 import java.time.Instant
 
-class MovementService(private val userRepository: UserRepository) {
+class MovementService(private val users: UserRepository, private val cities: CityRepository) {
     companion object {
         const val USER_TRAVEL_SPEED_KM_PER_DAY = 50.0
     }
-
-    suspend fun startMoving(
-        userId: Long, dynastyId: String,
-        toName: String, toLat: Double, toLng: Double,
-    ): MovementResult {
-        val currentLoc = userRepository.getLocation(userId, dynastyId)
-        if (currentLoc == null) {
-            // Auto-create a location for the user
-            userRepository.upsertLocation(userId, dynastyId, toName, toLat, toLng, "settled")
-            return MovementResult(
-                status = "settled",
-                currentName = toName, currentLat = toLat, currentLng = toLng,
-                movingToName = null, movingToLat = null, movingToLng = null,
-                remainingSeconds = 0,
-            )
-        }
-
-        val distanceKm = DelayCalculationService.haversineDistance(
-            currentLoc.lat, currentLoc.lng, toLat, toLng
-        )
-        val travelDays = distanceKm / USER_TRAVEL_SPEED_KM_PER_DAY
-        val travelSeconds = maxOf(3600L, (travelDays * 86400).toLong())
-
-        val now = Instant.now()
-        val arrivalTime = now.plusSeconds(travelSeconds)
-
-        userRepository.setMoving(
-            userId, dynastyId,
-            toName, toLat, toLng, now, arrivalTime,
-        )
-
-        return MovementResult(
-            status = "moving",
-            currentName = currentLoc.locationName,
-            currentLat = currentLoc.lat,
-            currentLng = currentLoc.lng,
-            movingToName = toName,
-            movingToLat = toLat,
-            movingToLng = toLng,
-            remainingSeconds = travelSeconds,
-        )
+    suspend fun preview(userId: Long, dynastyId: String, toName: String, toLat: Double, toLng: Double): com.ancientpoet.shared.contract.MovementPreview {
+        val city = cities.requireCity(dynastyId, toName, toLat, toLng)
+        getStatus(userId, dynastyId)
+        val current = users.getLocation(userId, dynastyId)
+            ?: return com.ancientpoet.shared.contract.MovementPreview(0.0, 0, true)
+        val distance = DelayCalculationService.haversineDistance(current.lat, current.lng, city.lat, city.lng)
+        return com.ancientpoet.shared.contract.MovementPreview(distance, if (distance < 1) 0 else travelSeconds(distance), false)
     }
-
-    suspend fun completeMovement(userId: Long, dynastyId: String): MovementResult {
-        val loc = userRepository.getLocation(userId, dynastyId)
-            ?: throw IllegalArgumentException("No location found")
-
-        if (loc.status != LocationStatus.MOVING) {
+    private fun travelSeconds(distance: Double) = (distance / USER_TRAVEL_SPEED_KM_PER_DAY * 86400).toLong().coerceIn(3600, 7 * 86400)
+    suspend fun startMoving(userId: Long, dynastyId: String, toName: String, toLat: Double, toLng: Double): MovementResult {
+        val city = cities.requireCity(dynastyId, toName, toLat, toLng)
+        getStatus(userId, dynastyId)
+        val current = users.getLocation(userId, dynastyId)
+        if (current == null) {
+            users.upsertLocation(userId, dynastyId, city.name, city.lat, city.lng, "settled")
             return getStatus(userId, dynastyId)
         }
-
-        val toName = loc.movingToName!!
-        val toLat = loc.movingToLat!!
-        val toLng = loc.movingToLng!!
-
-        userRepository.upsertLocation(userId, dynastyId, toName, toLat, toLng, "settled")
-
-        return MovementResult(
-            status = "settled",
-            currentName = toName, currentLat = toLat, currentLng = toLng,
-            movingToName = null, movingToLat = null, movingToLng = null,
-            remainingSeconds = 0,
-        )
-    }
-
-    suspend fun getStatus(userId: Long, dynastyId: String): MovementResult {
-        val loc = userRepository.getLocation(userId, dynastyId)
-            ?: return MovementResult(
-                status = "unknown",
-                currentName = "未知", currentLat = 0.0, currentLng = 0.0,
-                movingToName = null, movingToLat = null, movingToLng = null,
-                remainingSeconds = 0,
-            )
-
-        if (loc.status == LocationStatus.MOVING && loc.movingArrivalTime != null) {
-            val now = Instant.now()
-            val arrival = Instant.parse(loc.movingArrivalTime)
-            val remaining = maxOf(0L, arrival.epochSecond - now.epochSecond)
-
-            if (remaining == 0L) {
-                return completeMovement(userId, dynastyId)
-            }
-
-            return MovementResult(
-                status = "moving",
-                currentName = loc.locationName,
-                currentLat = loc.lat, currentLng = loc.lng,
-                movingToName = loc.movingToName,
-                movingToLat = loc.movingToLat,
-                movingToLng = loc.movingToLng,
-                remainingSeconds = remaining,
-            )
+        if (current.status == LocationStatus.MOVING) throw ApiException(HttpStatusCode.Conflict, "already_moving", "旅途已开始，请抵达后再选择下一站")
+        val distance = DelayCalculationService.haversineDistance(current.lat, current.lng, city.lat, city.lng)
+        if (distance < 1) return getStatus(userId, dynastyId)
+        val seconds = travelSeconds(distance)
+        val now = Instant.now()
+        if (!users.setMoving(userId, dynastyId, city.name, city.lat, city.lng, now, now.plusSeconds(seconds))) {
+            throw ApiException(HttpStatusCode.Conflict, "already_moving", "旅途状态已变化，请刷新")
         }
-
-        return MovementResult(
-            status = "settled",
-            currentName = loc.locationName,
-            currentLat = loc.lat, currentLng = loc.lng,
-            movingToName = null, movingToLat = null, movingToLng = null,
-            remainingSeconds = 0,
-        )
+        return getStatus(userId, dynastyId)
     }
-
-    suspend fun checkAutoArrivals(userId: Long) {
-        val loc = userRepository.getLocation(userId, "tang") // check all dynasties
-        // In production, check all user's dynasties
-        // For Phase 2, auto-complete is triggered on next API call via getStatus
+    suspend fun getStatus(userId: Long, dynastyId: String): MovementResult {
+        cities.requireDynasty(dynastyId)
+        users.settleArrived(userId, dynastyId)
+        val loc = users.getLocation(userId, dynastyId)
+            ?: return MovementResult("unknown", "未选择落脚地", 0.0, 0.0, null, null, null, 0)
+        return MovementResult(
+            loc.status.name.lowercase(),
+            loc.locationName,
+            loc.lat,
+            loc.lng,
+            loc.movingToName,
+            loc.movingToLat,
+            loc.movingToLng,
+            loc.movingArrivalTime?.let { (Instant.parse(it).epochSecond - Instant.now().epochSecond).coerceAtLeast(0) } ?: 0
+        )
     }
 }
-
 data class MovementResult(
     val status: String,
     val currentName: String,
@@ -127,5 +63,5 @@ data class MovementResult(
     val movingToName: String?,
     val movingToLat: Double?,
     val movingToLng: Double?,
-    val remainingSeconds: Long,
+    val remainingSeconds: Long
 )
